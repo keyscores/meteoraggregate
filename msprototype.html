@@ -1,0 +1,68 @@
+<head>
+  <title>msprototype</title>
+</head>
+
+<body>
+  <h1>Prototype</h1>
+
+  {{> uploadcsv}}
+  {{> currency}}
+  {{> taxrates}}
+  {{> fees}}
+  {{> totals}}
+</body>
+
+<template name="uploadcsv">
+	<input type="file" id="files" name="files[]" multiple />
+	<output id="list"></output>
+</template>
+
+<template name="currency">
+	<div class="form-group">
+		<label for="currency">Currency:</label>
+		<select name="currency" id="currency">
+			{{#each getCurrency}}
+				<option>{{CountryCode}} {{m}} {{y}}</option>
+			{{/each}}
+		</select>	
+		<input type="text" id="currValue" name="currValue" size="3" maxlength="3">  		
+	</div>
+</template>
+
+<template name="taxrates">
+	<div class="form-group">
+		<label for="tax">Tax:</label>
+		<select name="tax" id="tax">
+			<option>Choose Vendor</option>
+			{{#each getTaxes}}
+				<option value="{{taxRate}}">{{VendorIdentifier}}</option>
+			{{/each}}
+		</select>
+		<input type="text" id="taxValue" name="taxValue"  size="3" maxlength="3">
+
+	</div>
+</template>
+
+<template name="fees">
+	<div class="form-group">
+		<label for="fee">Fee:</label>
+		<select name="fee" id="fee">
+			<option>Choose Vendor</option>
+			{{#each getFees}}
+				<option>{{VendorIdentifier}}</option>
+			{{/each}}
+		</select>	
+		<input type="text" id="feeValue" name="feeValue" size="3" maxlength="3">	
+		  		
+	</div>
+</template>
+
+<template name="totals">
+	<p>
+		Totals: 
+		{{#each getTotals}}
+			<li> {{m}}/{{y}}: {{totescurr}}</li>
+		{{/each}}
+	</p>
+	<button name="calc" id="calc">CALC</button>
+</template>
