@@ -72,32 +72,9 @@ if (Meteor.isClient) {
 
     "change #taxValue": function(e,t) {
       var tx = t.find('#tax').value;
-      console.log(tx);
-      var tmp = Transactions.find({VendorIdentifier: tx}).fetch();
-      var tmp2 = Tax.find({VendorIdentifier: tx}).fetch();
-
       var txv = t.find('#taxValue').value;
-      console.log(txv);
-      Tax.update({_id: tmp2[0]._id},{$set:{
-        TaxRate: txv
-      }});
 
-      for(var i=0; i < tmp.length; i++){
-        //console.log(tmp[i]);
-        Transactions.update({_id: tmp[i]._id},{$set:{
-          FeeRate : tmp[i].FeeRate,
-          FeeValue : tmp[i].FeeValue,
-          TaxRate: tmp[i].TaxRate,
-          TaxValue: tmp[i].CustomerPrice * txv,
-          CurrencyRate: tmp[i].CurrencyRate,
-          ConvertedValue: tmp[i].ConvertedValue,
-          CustomerPrice: tmp[i].CustomerPrice,
-          CustomerCurrency: tmp[i].CustomerCurrency,
-          Units: tmp[i].Units,
-          NetSaleValue : ((tmp[i].ConvertedValue)+(tmp[i].FeeValue)+(tmp[i].CustomerPrice*txv))*tmp[i].Units
-        }}); 
-      }
-
+      Meteor.call('chgTaxValue', tx, txv);
       Meteor.call('salesTotals');
     }  
   });
@@ -115,36 +92,9 @@ if (Meteor.isClient) {
 
     "change #currValue": function(e,t) {
       var cr = t.find('#currency').value;
-      console.log(cr);
-      var arg = cr.split(" ");
-      console.log(arg);
-      var tmp2 = Currency.find({CountryCode: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])}).fetch();
-      var tmp = Transactions.find({CustomerCurrency: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])}).fetch();
-      console.log(tmp);
-
       var crv = t.find('#currValue').value;
-      crv =  parseInt(crv);
-      console.log(crv);
-      Currency.update({_id: tmp2[0]._id},{$set:{
-        CurrencyValue: crv
-      }});
 
-      for(var i=0; i < tmp.length; i++){
-        //console.log(tmp[i]);
-        Transactions.update({_id: tmp[i]._id},{$set:{
-          FeeRate : tmp[i].FeeRate,
-          FeeValue : tmp[i].FeeValue,
-          TaxRate: tmp[i].TaxRate,
-          TaxValue: tmp[i].TaxValue,
-          CurrencyRate: crv*1,
-          ConvertedValue: tmp[i].CustomerPrice*crv,
-          CustomerPrice: tmp[i].CustomerPrice,
-          CustomerCurrency: tmp[i].CustomerCurrency,
-          Units: tmp[i].Units,
-          NetSaleValue : ((tmp[i].TaxValue)+(tmp[i].FeeValue)+(tmp[i].ConvertedValue * crv))*tmp[i].Units
-        }}); 
-      }
-
+      Meteor.call('chgCurrValue', cr, crv);
       Meteor.call('salesTotals');
     }  
   });
@@ -160,32 +110,9 @@ if (Meteor.isClient) {
 
     "change #feeValue": function(e,t) {
       var fe = t.find('#fee').value;
-      console.log(fe);
-      var tmp = Transactions.find({VendorIdentifier: fe}).fetch();
-      var tmp2 = Fee.find({VendorIdentifier: fe}).fetch();
-
       var fev = t.find('#feeValue').value;
-      console.log(fev);
-      Fee.update({_id: tmp2[0]._id},{$set:{
-        FeeRate: fev
-      }});
 
-      for(var i=0; i < tmp.length; i++){
-        //console.log(tmp[i]);
-        Transactions.update({_id: tmp[i]._id},{$set:{
-          FeeRate : fev*1,
-          FeeValue : tmp[i].CustomerPrice*fev,
-          TaxRate: tmp[i].TaxRate,
-          TaxValue: tmp[i].TaxValue,
-          CurrencyRate: tmp[i].CurrencyRate,
-          ConvertedValue: tmp[i].ConvertedValue,
-          CustomerPrice: tmp[i].CustomerPrice,
-          CustomerCurrency: tmp[i].CustomerCurrency,
-          Units: tmp[i].Units,
-          NetSaleValue : ((tmp[i].ConvertedValue)+(tmp[i].TaxValue)+(tmp[i].CustomerPrice*fev))*tmp[i].Units
-        }}); 
-      }
-
+      Meteor.call('chgFeeValue', fe, fev);
       Meteor.call('salesTotals');
     },    
   });
@@ -364,6 +291,63 @@ if (Meteor.isServer) {
       removeAllTotals: function() {
         return Totals.remove({});
       },
+      chgTaxValue: function(tx, txv) {
+
+        var tmp = Transactions.find({VendorIdentifier: tx}).fetch();
+        var tmp2 = Tax.find({VendorIdentifier: tx}).fetch();
+
+        Tax.update({_id: tmp2[0]._id},{$set:{
+          TaxRate: txv
+        }});
+
+        for(var i=0; i < tmp.length; i++){
+          Transactions.update({_id: tmp[i]._id},{$set:{
+            TaxRate: txv,
+            TaxValue: tmp[i].CustomerPrice * txv,
+            NetSaleValue : ((tmp[i].ConvertedValue)+(tmp[i].FeeValue)+(tmp[i].CustomerPrice*txv))*tmp[i].Units
+          }}); 
+        }
+      },
+      
+      chgCurrValue: function(cr, crv) {   
+        var arg = cr.split(" ");
+
+        var tmp2 = Currency.find({CountryCode: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])}).fetch();
+        var tmp = Transactions.find({CustomerCurrency: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])}).fetch();
+       
+        crv =  parseInt(crv);
+
+        Currency.update({_id: tmp2[0]._id},{$set:{
+          CurrencyValue: crv
+        }});
+
+        for(var i=0; i < tmp.length; i++){
+          //console.log(tmp[i]);
+          Transactions.update({_id: tmp[i]._id},{$set:{
+            CurrencyRate: crv*1,
+            ConvertedValue: tmp[i].CustomerPrice*crv,
+            NetSaleValue : ((tmp[i].TaxValue)+(tmp[i].FeeValue)+(tmp[i].ConvertedValue * crv))*tmp[i].Units
+          }}); 
+        }
+      },
+
+      chgFeeValue: function(fe, fev){
+        var tmp = Transactions.find({VendorIdentifier: fe}).fetch();
+        var tmp2 = Fee.find({VendorIdentifier: fe}).fetch();
+
+        Fee.update({_id: tmp2[0]._id},{$set:{
+          FeeRate: fev
+        }});
+
+        for(var i=0; i < tmp.length; i++){
+          //console.log(tmp[i]);
+          Transactions.update({_id: tmp[i]._id},{$set:{
+            FeeRate : fev*1,
+            FeeValue : tmp[i].CustomerPrice*fev,
+            NetSaleValue : ((tmp[i].ConvertedValue)+(tmp[i].TaxValue)+(tmp[i].CustomerPrice*fev))*tmp[i].Units
+          }}); 
+        }
+      },     
 
       updateTransactions: function(f,v) {
 
