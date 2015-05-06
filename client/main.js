@@ -143,30 +143,36 @@ Template.uploadcsv.events({
               if(!isNaN(tmpD8.getMonth()+1)){
                 if(charlie3 == 0 && !isNaN(tmpD8.getMonth()+1)){
 
-                  Currency.insert({
+                  var newCurrency = {
                       CountryCode : data[17],
                       DownloadDate : tmpD8,
                       CurrencyValue : 1.2,
                       m: tmpD8.getMonth()+1,
                       y: tmpD8.getFullYear()
-                  });
+                  };
+                  Currency.insert(newCurrency);
+                  console.log('Currency.insert(' + JSON.stringify(newCurrency) + ');')
                 }
 
                 charlie = Fee.find({VendorIdentifier: data[2]}).count();
 
                 if(charlie == 0){
-                  Fee.insert({
+                  var newFee = {
                     VendorIdentifier : data[2],
-                    FeeRate : .1
-                  });
+                    FeeRate : 0.1
+                  };
+                  Fee.insert(newFee);
+                  console.log('Fee.insert(' + JSON.stringify(newFee) + ');')
 
-                  Tax.insert({
+                  var newTax = {
                     VendorIdentifier : data[2],
-                    TaxRate: .1
-                  });
+                    TaxRate: 0.1
+                  };
+                  Tax.insert(newTax);
+                  console.log('Tax.insert(' + JSON.stringify(newTax) + ');')
                 }
 
-                Raw.insert({
+                var newRaw = {
                   Provider : data[0],
                   ProviderCountry : data[1],
                   VendorIdentifier : data[2],
@@ -200,9 +206,11 @@ Template.uploadcsv.events({
                   ParentTypeId : data[30],
                   AttributablePurchase : data[31],
                   PrimaryGenre : data[32]
-                });
+                };
+                Raw.insert(newRaw);
+                console.log('Raw.insert(' + JSON.stringify(newRaw) + ');')
 
-                Transactions.insert({
+                var newTransactions = {
                   VendorIdentifier : data[2],
                   DownloadDate : tmpD8,
                   CurrencyRate : 1.2,
@@ -217,7 +225,9 @@ Template.uploadcsv.events({
                   CustomerCurrency: data[17],
                   m: tmpD8.getMonth()+1,
                   y: tmpD8.getFullYear()
-                });
+                };
+                Transactions.insert(newTransactions);
+                console.log('Transactions.insert(' + JSON.stringify(newTransactions) + ');')
               }
 
             }

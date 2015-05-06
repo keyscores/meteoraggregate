@@ -5,7 +5,6 @@
 <body>
   <h1>Prototype</h1>
 
-  {{> uploadcsv}}
   {{> currency}}
   {{> taxrates}}
   {{> fees}}
@@ -24,8 +23,8 @@
 			{{#each getCurrency}}
 				<option>{{CountryCode}} {{m}} {{y}}</option>
 			{{/each}}
-		</select>	
-		<input type="text" id="currValue" name="currValue" size="3" maxlength="3">  		
+		</select>
+		<input type="text" id="currValue" name="currValue" size="3" maxlength="3">
 	</div>
 </template>
 
@@ -51,15 +50,15 @@
 			{{#each getFees}}
 				<option>{{VendorIdentifier}}</option>
 			{{/each}}
-		</select>	
-		<input type="text" id="feeValue" name="feeValue" size="3" maxlength="3">	
-		  		
+		</select>
+		<input type="text" id="feeValue" name="feeValue" size="3" maxlength="3">
+
 	</div>
 </template>
 
 <template name="totals">
 	<p>
-		Totals: 
+		Totals:
 		{{#each getTotals}}
 			<li> {{m}}/{{y}}: {{totescurr}}</li>
 		{{/each}}
