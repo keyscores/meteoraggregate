@@ -53,14 +53,12 @@ Meteor.startup(function () {
       }});
 
       for(var i=0; i < tmp.length; i++){
-        Transactions.update({_id: tmp[i]._id},{$set:{
-          TaxRate: txv,
-          TaxValue: tmp[i].CustomerPrice * txv,
-          NetSaleValue : ((tmp[i].ConvertedValue)+(tmp[i].FeeValue)+(tmp[i].CustomerPrice*txv))*tmp[i].Units
-        }});
+        tmp[i].TaxRate = txv;
+        tmp[i].TaxValue = tmp[i].CustomerPrice * txv;
+        tmp[i].NetSaleValue = ((tmp[i].ConvertedValue)+(tmp[i].FeeValue)+(tmp[i].CustomerPrice*txv))*tmp[i].Units;
       }
+      bulkCollectionUpdate(Transactions, tmp);
     },
-
     chgCurrValue: function(cr, crv) {
       var arg = cr.split(" ");
 
@@ -73,17 +71,18 @@ Meteor.startup(function () {
         CurrencyValue: crv
       }});
 
-      var t1 = (new Date()).getTime();
+      // console.info('chgCurrValue is starting');
+      // var t1 = (new Date()).getTime();
+
       for(var i=0; i < tmp.length; i++){
-        //console.log(tmp[i]);
-        Transactions.update({_id: tmp[i]._id},{$set:{
-          CurrencyRate: crv*1,
-          ConvertedValue: tmp[i].CustomerPrice*crv,
-          NetSaleValue : ((tmp[i].TaxValue)+(tmp[i].FeeValue)+(tmp[i].ConvertedValue * crv))*tmp[i].Units
-        }});
+        tmp[i].CurrencyRate = crv * 1;
+        tmp[i].ConvertedValue = tmp[i].CustomerPrice * crv;
+        tmp[i].NetSaleValue = ((tmp[i].TaxValue)+(tmp[i].FeeValue)+(tmp[i].ConvertedValue * crv))*tmp[i].Units;
       }
-      var t2 = (new Date()).getTime();
-      console.info('chgCurrValue took', t2 - t1, 'ms');
+      bulkCollectionUpdate(Transactions, tmp);
+
+      // var t2 = (new Date()).getTime();
+      // console.info('chgCurrValue took', t2 - t1, 'ms for', tmp.length, 'records');
     },
 
     chgFeeValue: function(fe, fev){
@@ -98,12 +97,11 @@ Meteor.startup(function () {
       // see http://docs.mongodb.org/manual/reference/method/Bulk/#Bulk
       for(var i=0; i < tmp.length; i++){
         //console.log(tmp[i]);
-        Transactions.update({_id: tmp[i]._id},{$set:{
-          FeeRate : fev*1,
-          FeeValue : tmp[i].CustomerPrice*fev,
-          NetSaleValue : ((tmp[i].ConvertedValue)+(tmp[i].TaxValue)+(tmp[i].CustomerPrice*fev))*tmp[i].Units
-        }});
+        tmp[i].FeeRate = fev*1;
+        tmp[i].FeeValue = tmp[i].CustomerPrice*fev;
+        tmp[i].NetSaleValue = ((tmp[i].ConvertedValue)+(tmp[i].TaxValue)+(tmp[i].CustomerPrice*fev))*tmp[i].Units;
       }
+      bulkCollectionUpdate(Transactions, tmp);
     },
 
     updateTransactions: function(f,v) {
