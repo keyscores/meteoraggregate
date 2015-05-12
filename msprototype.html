@@ -9,6 +9,7 @@
   {{> taxrates}}
   {{> fees}}
   {{> totals}}
+  {{> timers}}
 </body>
 
 <template name="uploadcsv">
@@ -70,4 +71,20 @@
 		{{/each}}
 	</table>
 	<button name="calc" id="calc">CALC</button>
+</template>
+<template name="timers">
+	<table border="1">
+		<tr>
+			<td>Currency</td><td>{{ currencyReadout.t }}ms</td><td>{{ currencyReadout.d }}</td>
+		</tr>
+		<tr>
+			<td>Fee</td><td>{{ feeReadout.t }}ms</td><td>{{ feeReadout.d }}</td>
+		</tr>
+		<tr>
+			<td>Tax</td><td>{{ taxReadout.t }}ms</td><td>{{ taxReadout.d }}</td>
+		</tr>
+		<tr>
+			<td>Sales Totals</td><td>{{ salesTotalsReadout.t }}ms</td><td>{{ salesTotalsReadout.d }}</td>
+		</tr>
+	</table>
 </template>

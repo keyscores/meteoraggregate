@@ -6,6 +6,7 @@ Meteor.subscribe('Tax');
 Meteor.subscribe('Fee');
 Meteor.subscribe('Raw');
 Meteor.subscribe('Totals');
+Meteor.subscribe('Timers');
 
 Template.currency.helpers({
   getCurrency: function () {
@@ -40,9 +41,27 @@ Template.totals.helpers({
     //console.log(utcmonth);
 
     return currency;
-},
+
+  },
+
 
 });
+
+Template.timers.helpers({
+  currencyReadout:function() {
+    return Timers.findOne({name:'currencyReadout'});
+  },
+  taxReadout:function() {
+    return Timers.findOne({name:'taxReadout'});
+  },
+  feeReadout:function() {
+    return Timers.findOne({name:'feeReadout'});
+  },
+  salesTotalsReadout:function() {
+    return Timers.findOne({name:'salesTotalsReadout'});
+  },
+
+})
 
 Template.totals.events({
   "click #calc": function (e) {
