@@ -57,11 +57,17 @@
 </template>
 
 <template name="totals">
-	<p>
-		Totals:
+	<table>
+		<tr>
+			<th>Period</th>
+			<th>Totals</th>
+			<th>Balance</th>
+		</tr>
 		{{#each getTotals}}
-			<li> {{m}}/{{y}}: {{totescurr}}</li>
+			<tr>
+				<td>{{m}}/{{y}}</td><td>{{totescurr}}</td><td>{{balance}}</td>
+			</tr>
 		{{/each}}
-	</p>
+	</table>
 	<button name="calc" id="calc">CALC</button>
 </template>
