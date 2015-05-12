@@ -57,7 +57,9 @@ Meteor.startup(function () {
         tmp[i].TaxValue = tmp[i].CustomerPrice * txv;
         tmp[i].NetSaleValue = ((tmp[i].ConvertedValue)+(tmp[i].FeeValue)+(tmp[i].CustomerPrice*txv))*tmp[i].Units;
       }
-      bulkCollectionUpdate(Transactions, tmp);
+      Meteor.wrapAsync(function(cb) {
+        bulkCollectionUpdate(Transactions, tmp, {callback:cb});
+      })();
     },
     chgCurrValue: function(cr, crv) {
       var arg = cr.split(" ");
@@ -79,7 +81,10 @@ Meteor.startup(function () {
         tmp[i].ConvertedValue = tmp[i].CustomerPrice * crv;
         tmp[i].NetSaleValue = ((tmp[i].TaxValue)+(tmp[i].FeeValue)+(tmp[i].ConvertedValue * crv))*tmp[i].Units;
       }
-      bulkCollectionUpdate(Transactions, tmp);
+
+      Meteor.wrapAsync(function(cb) {
+        bulkCollectionUpdate(Transactions, tmp, {callback:cb});
+      })();
 
       // var t2 = (new Date()).getTime();
       // console.info('chgCurrValue took', t2 - t1, 'ms for', tmp.length, 'records');
@@ -101,7 +106,9 @@ Meteor.startup(function () {
         tmp[i].FeeValue = tmp[i].CustomerPrice*fev;
         tmp[i].NetSaleValue = ((tmp[i].ConvertedValue)+(tmp[i].TaxValue)+(tmp[i].CustomerPrice*fev))*tmp[i].Units;
       }
-      bulkCollectionUpdate(Transactions, tmp);
+      Meteor.wrapAsync(function(cb) {
+        bulkCollectionUpdate(Transactions, tmp, {callback:cb});
+      })();
     },
 
     updateTransactions: function(f,v) {
@@ -121,7 +128,8 @@ Meteor.startup(function () {
     },
 
     salesTotals: function() {
-      Meteor.call('removeAllTotals');
+      // Meteor.call('removeAllTotals');
+      Totals.remove({});
       var pipeline = [
                       { $group:
                         {

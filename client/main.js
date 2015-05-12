@@ -46,8 +46,10 @@ Template.totals.helpers({
 
 Template.totals.events({
   "click #calc": function (e) {
-    Meteor.call("removeAllTotals");
-    Meteor.call("salesTotals");
+    // Meteor.call("removeAllTotals");
+    Meteor.call("salesTotals", function() {
+      console.log('calc button done');
+    });
   }
 });
 
@@ -64,8 +66,9 @@ Template.taxrates.events({
     var tx = t.find('#tax').value;
     var txv = t.find('#taxValue').value;
 
-    Meteor.call('chgTaxValue', tx, txv);
-    Meteor.call('salesTotals');
+    Meteor.call('chgTaxValue', tx, txv, function() {    
+      Meteor.call('salesTotals');
+    });
   }
 });
 
@@ -84,8 +87,13 @@ Template.currency.events({
     var cr = t.find('#currency').value;
     var crv = t.find('#currValue').value;
 
-    Meteor.call('chgCurrValue', cr, crv);
-    Meteor.call('salesTotals');
+    console.log('starting currency change');
+    Meteor.call('chgCurrValue', cr, crv, function() {
+      console.log('done with currency change, starting sales totals');
+      Meteor.call('salesTotals', function() {
+        console.log('sales totals done now');
+      });
+    });
   }
 });
 
@@ -102,8 +110,10 @@ Template.fees.events({
     var fe = t.find('#fee').value;
     var fev = t.find('#feeValue').value;
 
-    Meteor.call('chgFeeValue', fe, fev);
-    Meteor.call('salesTotals');
+    Meteor.call('chgFeeValue', fe, fev, function() {
+
+      Meteor.call('salesTotals');
+    });
   },
 });
 
