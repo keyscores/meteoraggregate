@@ -130,17 +130,25 @@ Meteor.startup(function () {
                             $sum:   "$NetSaleValue"
                           }
                         }
+                      },
+                      {
+                        $sort:{
+                          '_id.y':1,
+                          '_id.m':1
+                        }
                       }
                     ];
 
       var result = Transactions.aggregate(pipeline);
 
 
-
+      var balance = 0.0;
       for(var i=0; i < result.length; i++){
         if(!isNaN(result[i].totalAmount)){
+          balance += result[i].totalAmount;
           Totals.insert(
             {
+              balance:balance,
               totes: result[i].totalAmount,
               m: result[i]._id.m,
               y: result[i]._id.y
