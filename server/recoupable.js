@@ -1,4 +1,4 @@
-if (Regime.find().count() === 0) {
+if (Recoupable.find().count() === 0) {
 Recoupable.insert({"ContractID":270,"Encoding U$":"-1,904.85","Media U$":0.00,"Date":"01/11/2014"});
 Recoupable.insert({"ContractID":305,"Encoding U$":"-1,000.00","Media U$":0.00,"Date":"01/02/2015"});
 Recoupable.insert({"ContractID":305,"Encoding U$":"-3.73","Media U$":0.00,"Date":"01/03/2015"});
