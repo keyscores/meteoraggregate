@@ -51,6 +51,9 @@ Template.timers.helpers({
   currencyReadout:function() {
     return Timers.findOne({name:'currencyReadout'});
   },
+  currencyKickoffReadout:function() {
+    return Timers.findOne({name:'currencyKickoffReadout'});
+  },
   taxReadout:function() {
     return Timers.findOne({name:'taxReadout'});
   },

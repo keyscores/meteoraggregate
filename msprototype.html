@@ -25,7 +25,7 @@
 				<option>{{CountryCode}} {{m}} {{y}}</option>
 			{{/each}}
 		</select>
-		<input type="text" id="currValue" name="currValue" size="3" maxlength="3">
+		<input type="text" id="currValue" name="currValue" size="5" maxlength="5">
 	</div>
 </template>
 
@@ -75,7 +75,10 @@
 <template name="timers">
 	<table border="1">
 		<tr>
-			<td>Currency</td><td>{{ currencyReadout.t }}ms</td><td>{{ currencyReadout.d }}</td>
+			<td>Currency (total including bulk op)</td><td>{{ currencyReadout.t }}ms</td><td>{{ currencyReadout.d }}</td>
+		</tr>
+		<tr>
+			<td>Currency (start bulk op)</td><td>{{ currencyKickoffReadout.t }}ms</td><td>{{ currencyKickoffReadout.d }}</td>
 		</tr>
 		<tr>
 			<td>Fee</td><td>{{ feeReadout.t }}ms</td><td>{{ feeReadout.d }}</td>

@@ -47,95 +47,102 @@ Meteor.startup(function () {
       return Totals.remove({});
     },
     chgTaxValue: function(tx, txv) {
-      Util.timerReadout('taxReadout', function() {
+      var timerDone = Util.timerReadout('taxReadout');
 
-        var tmp = Transactions.find({VendorIdentifier: tx}).fetch();
-        var tmp2 = Tax.find({VendorIdentifier: tx}).fetch();
+      var tmp = Transactions.find({VendorIdentifier: tx});
+      var tmp2 = Tax.find({VendorIdentifier: tx}).fetch();
 
-        Tax.update({_id: tmp2[0]._id},{$set:{
-          TaxRate: txv
+      Tax.update({_id: tmp2[0]._id},{$set:{
+        TaxRate: txv
+      }});
+
+      var coll = Transactions.rawCollection();
+      var bulkOp = coll.initializeUnorderedBulkOp();
+
+      tmp.forEach(function(tr) {
+        bulkOp.find({_id: tr._id}).update({$set:{
+          TaxRate:txv,
+          TaxValue:tr.CustomerPrice * txv,
+          NetSaleValue:((tr.ConvertedValue)+(tr.FeeValue)+(tr.CustomerPrice*txv))*tr.Units
         }});
-
-        for(var i=0; i < tmp.length; i++){
-          tmp[i].TaxRate = txv;
-          tmp[i].TaxValue = tmp[i].CustomerPrice * txv;
-          tmp[i].NetSaleValue = ((tmp[i].ConvertedValue)+(tmp[i].FeeValue)+(tmp[i].CustomerPrice*txv))*tmp[i].Units;
-        }
-        Meteor.wrapAsync(function(cb) {
-          bulkCollectionUpdate(Transactions, tmp, {callback:cb});
-        })();
       });
+      bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
+        timerDone();
+        if (err) {
+          console.error('Exception updating Transactions', err);
+        }
+      }));
+
     },
     chgCurrValue: function(cr, crv) {
-      Util.timerReadout('currencyReadout', function() {
-        var arg = cr.split(" ");
+      var timerDone = Util.timerReadout('currencyKickoffReadout');
+      var timerDone2 = Util.timerReadout('currencyReadout');
+      var arg = cr.split(" ");
 
-        var tmp2 = Currency.find({CountryCode: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])}).fetch();
-        var tmp = Transactions.find({CustomerCurrency: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])});
+      var tmp2 = Currency.find({CountryCode: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])}).fetch();
+      var tmp = Transactions.find({CustomerCurrency: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])});
 
-        crv =  parseInt(crv);
+      // crv =  parseInt(crv);
 
-        Currency.update({_id: tmp2[0]._id},{$set:{
-          CurrencyValue: crv
+      Currency.update({_id: tmp2[0]._id},{$set:{
+        CurrencyValue: crv
+      }});
+
+      var t1 = (new Date()).getTime();
+
+      var coll = Transactions.rawCollection();
+      var bulkOp = coll.initializeUnorderedBulkOp();
+
+      tmp.forEach(function(tr) {
+        bulkOp.find({_id: tr._id}).update({$set:{
+          CurrencyRate: crv*1,
+          ConvertedValue: tr.CustomerPrice*crv,
+          NetSaleValue : ((tr.TaxValue)+(tr.FeeValue)+(tr.ConvertedValue * crv))*tr.Units
         }});
 
-        var t1 = (new Date()).getTime();
-
-        var coll = Transactions.rawCollection();
-        var bulkOp = coll.initializeUnorderedBulkOp();
-
-        tmp.forEach(function(tr) {
-          bulkOp.find({_id: tr._id}).update({$set:{
-            CurrencyRate: crv*1,
-            ConvertedValue: tr.CustomerPrice*crv,
-            NetSaleValue : ((tr.TaxValue)+(tr.FeeValue)+(tr.ConvertedValue * crv))*tr.Units
-          }});
-
-        });
-
-        bulkOp.execute();
-
       });
+
+      timerDone();
+      bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
+        timerDone2();
+        if (err) {
+          console.error('Exception updating Transactions', err);
+        }
+      }));
+
     },
 
     chgFeeValue: function(fe, fev){
-      Util.timerReadout('feeReadout', function() {
-        var tmp = Transactions.find({VendorIdentifier: fe}).fetch();
-        var tmp2 = Fee.find({VendorIdentifier: fe}).fetch();
+      var timerDone = Util.timerReadout('feeReadout');
+      var tmp = Transactions.find({VendorIdentifier: fe});
+      var tmp2 = Fee.find({VendorIdentifier: fe}).fetch();
 
-        Fee.update({_id: tmp2[0]._id},{$set:{
-          FeeRate: fev
-        }});
-
-
-        // see http://docs.mongodb.org/manual/reference/method/Bulk/#Bulk
-        for(var i=0; i < tmp.length; i++){
-          //console.log(tmp[i]);
-          tmp[i].FeeRate = fev*1;
-          tmp[i].FeeValue = tmp[i].CustomerPrice*fev;
-          tmp[i].NetSaleValue = ((tmp[i].ConvertedValue)+(tmp[i].TaxValue)+(tmp[i].CustomerPrice*fev))*tmp[i].Units;
-        }
-        Meteor.wrapAsync(function(cb) {
-          bulkCollectionUpdate(Transactions, tmp, {callback:cb});
-        })();
-      });
-    },
-
-    updateTransactions: function(f,v) {
-
-      Transactions.update({VendorIdentifier: v},{$set:{
-        FeeRate : f*1,
-        FeeValue : tmp[i].CustomerPrice*f,
-        TaxRate: tmp[i].TaxRate,
-        TaxValue: tmp[i].TaxValue,
-        CurrencyRate: tmp[i].CurrencyRate,
-        CurrencyValue: tmp[i].CuurencyValue,
-        CustomerPrice: tmp[i].CustomerPrice,
-        CustomerCurrency: tmp[i].CustomerCurrency,
-        Units: tmp[i].Units,
-        NetSaleValue : (tmp[i].CurrencyValue)+(tmp[i].TaxValue)+(tmp[i].CustomerPrice*f)*tmp[i].CustomerUnits
+      Fee.update({_id: tmp2[0]._id},{$set:{
+        FeeRate: fev
       }});
+
+
+      var coll = Transactions.rawCollection();
+      var bulkOp = coll.initializeUnorderedBulkOp();
+
+      tmp.forEach(function(tr) {
+        bulkOp.find({_id: tr._id}).update({$set:{
+          FeeRate:fev*1,
+          FeeValue:tr.CustomerPrice*fev,
+          NetSaleValue:((tr.ConvertedValue)+(tr.TaxValue)+(tr.CustomerPrice*fev))*tr.Units
+        }});
+      });
+
+      bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
+        timerDone();
+        if (err) {
+          console.error('Exception updating Transactions', err);
+        }
+      }));
+
+
     },
+
 
     salesTotals: function() {
       // Meteor.call('removeAllTotals');
