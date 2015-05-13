@@ -71,7 +71,7 @@ Meteor.startup(function () {
         var arg = cr.split(" ");
 
         var tmp2 = Currency.find({CountryCode: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])}).fetch();
-        var tmp = Transactions.find({CustomerCurrency: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])}).fetch();
+        var tmp = Transactions.find({CustomerCurrency: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])});
 
         crv =  parseInt(crv);
 
@@ -81,16 +81,19 @@ Meteor.startup(function () {
 
         var t1 = (new Date()).getTime();
 
+        var coll = Transactions.rawCollection();
+        var bulkOp = coll.initializeUnorderedBulkOp();
 
-        for(var i=0; i < tmp.length; i++){
-          tmp[i].CurrencyRate = crv * 1;
-          tmp[i].ConvertedValue = tmp[i].CustomerPrice * crv;
-          tmp[i].NetSaleValue = ((tmp[i].TaxValue)+(tmp[i].FeeValue)+(tmp[i].ConvertedValue * crv))*tmp[i].Units;
-        }
+        tmp.forEach(function(tr) {
+          bulkOp.find({_id: tr._id}).update({$set:{
+            CurrencyRate: crv*1,
+            ConvertedValue: tr.CustomerPrice*crv,
+            NetSaleValue : ((tr.TaxValue)+(tr.FeeValue)+(tr.ConvertedValue * crv))*tr.Units
+          }});
 
-        Meteor.wrapAsync(function(cb) {
-          bulkCollectionUpdate(Transactions, tmp, {callback:cb});
-        })();
+        });
+
+        bulkOp.execute();
 
       });
     },
