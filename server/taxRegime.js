@@ -22,5 +22,5 @@ Regime.insert({"Regime":"Produtor Int'l","Offshore":"5.00%","Brasil":"14.65%","Y
 Regime.insert({"Regime":"Foreign Entity","Offshore":"5.00%","Brasil":"14.65%","Year":2015});
 Regime.insert({"Regime":"LATAM Library","Offshore":"5.00%","Brasil":"14.65%","Year":2015});
 Regime.insert({"Regime":"OTT only","Offshore":"5.00%","Brasil":"14.65%","Year":2015});
-Regime.insert({"Regime":"Produtor BR","Offshore":"5.00%","Brasil":"14.65%","Year":2015}
+Regime.insert({"Regime":"Produtor BR","Offshore":"5.00%","Brasil":"14.65%","Year":2015});
 }

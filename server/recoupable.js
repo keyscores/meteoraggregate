@@ -1,4 +1,4 @@
-if (Regime.find().count() === 0) Recoupable.insert({
+if (Regime.find().count() === 0) {
 Recoupable.insert({"ContractID":270,"Encoding U$":"-1,904.85","Media U$":0.00,"Date":"01/11/2014"});
 Recoupable.insert({"ContractID":305,"Encoding U$":"-1,000.00","Media U$":0.00,"Date":"01/02/2015"});
 Recoupable.insert({"ContractID":305,"Encoding U$":"-3.73","Media U$":0.00,"Date":"01/03/2015"});
@@ -115,7 +115,7 @@ Recoupable.insert({"ContractID":451,"Encoding U$":"0.00","Media U$":0.00,"Date":
 Recoupable.insert({"ContractID":450,"Encoding U$":"0.00","Media U$":0.00,"Date":"01/01/2014"});
 Recoupable.insert({"ContractID":449,"Encoding U$":"-272.73","Media U$":0.00,"Date":"01/03/2014"});
 Recoupable.insert({"ContractID":448,"Encoding U$":"0.00","Media U$":0.00,"Date":"01/12/2013"});
-Recoupable.insert({"ContractID":447,"Encoding U$":"0.00","Media U$":-4,000.00,"Date":"01/11/2013"});
+Recoupable.insert({"ContractID":447,"Encoding U$":"0.00","Media U$":-4000.00,"Date":"01/11/2013"});
 Recoupable.insert({"ContractID":446,"Encoding U$":"-262.59","Media U$":0.00,"Date":"01/03/2014"});
 Recoupable.insert({"ContractID":445,"Encoding U$":"0.00","Media U$":0.00,"Date":"01/10/2013"});
 Recoupable.insert({"ContractID":444,"Encoding U$":"-261.65","Media U$":0.00,"Date":"01/04/2014"});
@@ -204,7 +204,7 @@ Recoupable.insert({"ContractID":356,"Encoding U$":"0.00","Media U$":0.00,"Date":
 Recoupable.insert({"ContractID":355,"Encoding U$":"0.00","Media U$":0.00,"Date":"01/01/2014"});
 Recoupable.insert({"ContractID":354,"Encoding U$":"0.00","Media U$":0.00,"Date":"01/03/2014"});
 Recoupable.insert({"ContractID":353,"Encoding U$":"0.00","Media U$":0.00,"Date":"01/12/2013"});
-Recoupable.insert({"ContractID":352,"Encoding U$":"0.00","Media U$":-1,000.00,"Date":"01/11/2013"});
+Recoupable.insert({"ContractID":352,"Encoding U$":"0.00","Media U$":-1000.00,"Date":"01/11/2013"});
 Recoupable.insert({"ContractID":351,"Encoding U$":"-262.59","Media U$":0.00,"Date":"01/03/2014"});
 Recoupable.insert({"ContractID":350,"Encoding U$":"0.00","Media U$":0.00,"Date":"01/10/2013"});
 Recoupable.insert({"ContractID":349,"Encoding U$":"-261.65","Media U$":0.00,"Date":"01/04/2014"});
@@ -430,7 +430,7 @@ Recoupable.insert({"ContractID":133,"Encoding U$":"-515.65","Media U$":0.00,"Dat
 Recoupable.insert({"ContractID":132,"Encoding U$":"-645.91","Media U$":0.00,"Date":"01/11/2013"});
 Recoupable.insert({"ContractID":131,"Encoding U$":"-645.91","Media U$":0.00,"Date":"01/10/2013"});
 Recoupable.insert({"ContractID":131,"Encoding U$":"-250.00","Media U$":0.00,"Date":"01/05/2015"});
-Recoupable.insert({"ContractID":130,"Encoding U$":"-1,242.00","Media U$":-5,000.00,"Date":"01/11/2013"});
+Recoupable.insert({"ContractID":130,"Encoding U$":"-1,242.00","Media U$":-5000.00,"Date":"01/11/2013"});
 Recoupable.insert({"ContractID":129,"Encoding U$":"-409.09","Media U$":0.00,"Date":"01/11/2013"});
 Recoupable.insert({"ContractID":128,"Encoding U$":"-593.60","Media U$":0.00,"Date":"01/05/2014"});
 Recoupable.insert({"ContractID":127,"Encoding U$":"-793.83","Media U$":0.00,"Date":"01/01/2014"});
