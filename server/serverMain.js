@@ -143,34 +143,15 @@ Meteor.startup(function () {
 
     },
 
-    chgFeeValue: function(fe, fev){
+    chgFeeValue: function(_id, fev){
       var timerDone = Util.timerReadout('feeReadout');
-      var tmp = Transactions.find({VendorIdentifier: fe});
-      var tmp2 = Fee.find({VendorIdentifier: fe}).fetch();
 
-      Fee.update({_id: tmp2[0]._id},{$set:{
-        FeeRate: fev
+      Contract.update({_id:_id},{$set:{
+        Fee: fev
       }});
 
-
-      var coll = Transactions.rawCollection();
-      var bulkOp = coll.initializeUnorderedBulkOp();
-
-      tmp.forEach(function(tr) {
-        bulkOp.find({_id: tr._id}).update({$set:{
-          FeeRate:fev*1,
-          FeeValue:tr.CustomerPrice*fev,
-          NetSaleValue:((tr.ConvertedValue)+(tr.TaxValue)+(tr.CustomerPrice*fev))*tr.Units
-        }});
-      });
-
-      bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
-        timerDone();
-        if (err) {
-          console.error('Exception updating Transactions', err);
-        }
-      }));
-
+      timerDone();
+      // TODO: start totals calc
 
     },
 

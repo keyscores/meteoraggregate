@@ -22,9 +22,9 @@ Template.taxrates.helpers({
 
 });
 
-Template.fees.helpers({
-  getFees: function () {
-    return Fee.find({},{sort:{VendorIdentifier: 1}});
+Template.contracts.helpers({
+  getContracts: function () {
+    return Contract.find({},{sort:{VendorIdentifier: 1, Region:1}});
   }
 });
 
@@ -129,23 +129,18 @@ Template.currency.events({
   }
 });
 
-Template.fees.events({
+Template.contracts.events({
   "change #fee": function(e,t) {
-    var fe = t.find('#fee').value;
-    console.log(fe);
-    var tmp = Fee.find({VendorIdentifier: fe}).fetch();
-    console.log(tmp);
-    t.find('#feeValue').value = tmp[0].FeeRate;
+    var _id = t.find('#fee').value;
+    var tmp = Contract.findOne({_id:_id});
+    t.find('#feeValue').value = tmp.Fee;
   },
 
   "change #feeValue": function(e,t) {
-    var fe = t.find('#fee').value;
+    var _id = t.find('#fee').value;
     var fev = t.find('#feeValue').value;
 
-    Meteor.call('chgFeeValue', fe, fev, function() {
-
-      Meteor.call('salesTotals');
-    });
+    Meteor.call('chgFeeValue', _id, fev);
   },
 });
 

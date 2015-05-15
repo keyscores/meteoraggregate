@@ -8,7 +8,7 @@
   
   {{> currency}}
   {{> taxrates}}
-  {{> fees}}
+  {{> contracts}}
   {{> totals}}
   {{> timers}}
 </body>
@@ -45,16 +45,16 @@
 	</div>
 </template>
 
-<template name="fees">
+<template name="contracts">
 	<div class="form-group">
-		<label for="fee">Fee:</label>
+		<label for="fee">Contract:</label>
 		<select name="fee" id="fee">
-			<option>Choose Vendor</option>
-			{{#each getFees}}
-				<option>{{VendorIdentifier}}</option>
+			<option>Choose Contract</option>
+			{{#each getContracts}}
+				<option value="{{_id}}">{{VendorIdentifier}} ({{Region}})</option>
 			{{/each}}
 		</select>
-		<input type="text" id="feeValue" name="feeValue" size="3" maxlength="3">
+		<input type="text" id="feeValue" name="feeValue" size="7" maxlength="7">
 
 	</div>
 </template>
