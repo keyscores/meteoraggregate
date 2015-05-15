@@ -74,6 +74,7 @@
 		{{/each}}
 	</table>
 	<button name="calc" id="calc">CALC</button>
+	<button id="enrich-transactions">Enrich</button>
 </template>
 <template name="timers">
 	<table border="1">
@@ -91,6 +92,9 @@
 		</tr>
 		<tr>
 			<td>Sales Totals</td><td>{{ salesTotalsReadout.t }}ms</td><td>{{ salesTotalsReadout.d }}</td>
+		</tr>
+		<tr>
+			<td>Enrich Transactions</td><td>{{ enrichTransactionsReadout.t }}ms</td><td>{{ enrichTransactionsReadout.d }}</td>
 		</tr>
 	</table>
 </template>

@@ -68,6 +68,9 @@ Template.timers.helpers({
   salesTotalsReadout:function() {
     return Timers.findOne({name:'salesTotalsReadout'});
   },
+  enrichTransactionsReadout:function() {
+    return Timers.findOne({name:'enrichTransactionsReadout'});
+  },
 
 })
 
@@ -76,6 +79,12 @@ Template.totals.events({
     // Meteor.call("removeAllTotals");
     Meteor.call("salesTotals", function() {
       console.log('calc button done');
+    });
+  },
+  "click #enrich-transactions": function (e) {
+    // Meteor.call("removeAllTotals");
+    Meteor.call("enrichTransactions", function() {
+      console.log('enrichment is done');
     });
   }
 });

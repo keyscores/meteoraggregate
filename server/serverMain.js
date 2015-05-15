@@ -74,6 +74,53 @@ Meteor.startup(function () {
       }));
 
     },
+    enrichTransactions: function(cr, crv) {
+      var timerDone = Util.timerReadout('enrichTransactionsReadout');
+      var coll = Transactions.rawCollection();
+      var bulkOp = coll.initializeUnorderedBulkOp();
+
+
+      Transactions.find({}).forEach(function(tr) {
+
+        var region = Region.findOne({'CountryCode':tr.CountryCode});
+        if (!region) {
+          console.error('no region for country', tr.CountryCode);
+        }
+
+        var contract = null;
+
+        if (region) {
+          contract = Contract.findOne({
+            VendorIdentifier:tr.VendorIdentifier,
+            Region:region.Region
+          });
+          if (!contract) {
+            console.error('no contract for vendor', tr.VendorIdentifier, 'region', region.Region);
+          }
+        }
+        
+
+        bulkOp.find({_id: tr._id}).update({$set:{
+          Region:     (region)    ? region.Region         : null,
+          ContractID: (contract)  ? contract.ContractID   : null,
+          FeeRate:    (contract)  ? contract.Fee          : tr.FeeRate,
+          Regime:     (contract)  ? Regime.findOne(
+                                    {Regime:contract.Regime, Year:tr.y})      
+                                                          : null,
+
+
+        }});
+
+      });
+
+      bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
+        timerDone();
+        if (err) {
+          console.error('Exception enriching Transactions', err);
+        }
+      }));
+
+    },
     chgCurrValue: function(cr, crv) {
       var timerDone = Util.timerReadout('currencyKickoffReadout');
       var timerDone2 = Util.timerReadout('currencyReadout');
@@ -104,11 +151,13 @@ Meteor.startup(function () {
 
       timerDone();
       bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
+        console.info('Bulk op done', (new Date()).getTime());
         timerDone2();
         if (err) {
           console.error('Exception updating Transactions', err);
         }
       }));
+      console.info('starting bulk op done', (new Date()).getTime());
 
     },
 
