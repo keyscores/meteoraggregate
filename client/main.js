@@ -29,11 +29,16 @@ Template.fees.helpers({
 });
 
 Template.totals.helpers({
+  
   getTotals: function () {
     //Meteor.call(salesTotals)
     //Meteor.call('removeAllTotals');
     return Totals.find({});
   },
+  
+  tasks: function () {
+      return Tasks.find({}).count()
+      },
 
   totescurr: function() {
     var currency = numeral(this.totes).format('$0,0.00');
