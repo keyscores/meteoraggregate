@@ -46,33 +46,15 @@ Meteor.startup(function () {
     removeAllTotals: function() {
       return Totals.remove({});
     },
-    chgTaxValue: function(tx, txv) {
+    chgTaxValue: function(_id, txv) {
       var timerDone = Util.timerReadout('taxReadout');
 
-      var tmp = Transactions.find({VendorIdentifier: tx});
-      var tmp2 = Tax.find({VendorIdentifier: tx}).fetch();
-
-      Tax.update({_id: tmp2[0]._id},{$set:{
-        TaxRate: txv
+      Regime.update({_id:_id}, {$set:{
+        Offshore: txv
       }});
 
-      var coll = Transactions.rawCollection();
-      var bulkOp = coll.initializeUnorderedBulkOp();
-
-      tmp.forEach(function(tr) {
-        bulkOp.find({_id: tr._id}).update({$set:{
-          TaxRate:txv,
-          TaxValue:tr.CustomerPrice * txv,
-          NetSaleValue:((tr.ConvertedValue)+(tr.FeeValue)+(tr.CustomerPrice*txv))*tr.Units
-        }});
-      });
-      bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
-        timerDone();
-        if (err) {
-          console.error('Exception updating Transactions', err);
-        }
-      }));
-
+      timerDone();
+      // TODO: start totals calc
     },
     enrichTransactions: function(cr, crv) {
       var timerDone = Util.timerReadout('enrichTransactionsReadout');

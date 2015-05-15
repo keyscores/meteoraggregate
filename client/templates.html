@@ -34,12 +34,13 @@
 	<div class="form-group">
 		<label for="tax">Tax:</label>
 		<select name="tax" id="tax">
-			<option>Choose Vendor</option>
+			<option>Choose Regime/Year</option>
 			{{#each getTaxes}}
-				<option value="{{taxRate}}">{{VendorIdentifier}}</option>
+				<option value="{{_id}}">{{Regime}} ({{Year}})</option>
 			{{/each}}
 		</select>
-		<input type="text" id="taxValue" name="taxValue"  size="3" maxlength="3">
+		Offshore:
+		<input type="text" id="taxValue" name="taxValue"  size="7" maxlength="7">
 
 	</div>
 </template>

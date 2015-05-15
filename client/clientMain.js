@@ -17,7 +17,7 @@ Template.currency.helpers({
 
 Template.taxrates.helpers({
   getTaxes: function () {
-    return Tax.find({},{sort:{VendorIdentifier: 1}});
+    return Regime.find({},{sort:{Regime: 1, Year:1}});
   }
 
 });
@@ -90,21 +90,17 @@ Template.totals.events({
 });
 
 Template.taxrates.events({
-  "change #tax": function(e,t) {
-    var tx = t.find('#tax').value;
-    console.log(tx);
-    var tmp = Tax.find({VendorIdentifier: tx}).fetch();
-    console.log(tmp);
-    t.find('#taxValue').value = tmp[0].TaxRate;
+  "change #tax": function(e, t) {
+    var _id = t.find('#tax').value;
+    var tmp = Regime.findOne({_id:_id});
+    t.find('#taxValue').value = tmp.Offshore;
   },
 
   "change #taxValue": function(e,t) {
-    var tx = t.find('#tax').value;
+    var _id = t.find('#tax').value;
     var txv = t.find('#taxValue').value;
 
-    Meteor.call('chgTaxValue', tx, txv, function() {    
-      Meteor.call('salesTotals');
-    });
+    Meteor.call('chgTaxValue', _id, txv);
   }
 });
 
