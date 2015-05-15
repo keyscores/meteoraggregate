@@ -83,4 +83,5 @@ Region.insert({"CountryCode":"VE","Region":"Latam"});
 Region.insert({"CountryCode":"ZA","Region":"World"});
 Region.insert({"CountryCode":"ZW","Region":"World"});
 Region.insert({"CountryCode":"SI","Region":"World"});
+Region.insert({"CountryCode":"UK","Region":"World"});
 }
