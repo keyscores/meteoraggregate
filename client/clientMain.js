@@ -2,8 +2,8 @@
 
 Meteor.subscribe('Transactions');
 Meteor.subscribe('Currency');
-Meteor.subscribe('Tax');
-Meteor.subscribe('Fee');
+Meteor.subscribe('Regime');
+Meteor.subscribe('Contract');
 Meteor.subscribe('Raw');
 Meteor.subscribe('Totals');
 Meteor.subscribe('Timers');
@@ -33,20 +33,16 @@ Template.totals.helpers({
   getTotals: function () {
     //Meteor.call(salesTotals)
     //Meteor.call('removeAllTotals');
-    return Totals.find({});
+    return Totals.find({}, {sort:{ContractID:1, y:1, m:1}});
   },
   
   tasks: function () {
-      return Tasks.find({}).count()
-      },
+    return Tasks.find({}).count()
+  },
 
-  totescurr: function() {
-    var currency = numeral(this.totes).format('$0,0.00');
-
-    //console.log(utcmonth);
-
+  asCurrency: function(n) {
+    var currency = numeral(n).format('$0,0.00');
     return currency;
-
   },
 
 

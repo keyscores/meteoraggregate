@@ -51,7 +51,7 @@
 		<select name="fee" id="fee">
 			<option>Choose Contract</option>
 			{{#each getContracts}}
-				<option value="{{_id}}">{{VendorIdentifier}} ({{Region}})</option>
+				<option value="{{_id}}">{{ContractID}} {{VendorIdentifier}} ({{Region}})</option>
 			{{/each}}
 		</select>
 		<input type="text" id="feeValue" name="feeValue" size="7" maxlength="7">
@@ -64,13 +64,27 @@
   
 	<table>
 		<tr>
+			<th>ContractID</th>
 			<th>Period</th>
-			<th>Totals</th>
-			<th>Balance</th>
+			<th>Net Sales Tot</th>
+			<th>Net Sales Bal</th>
+			<th>Encoding Tot</th>
+			<th>Encoding Bal</th>
+			<th>Media Tot</th>
+			<th>Media Bal</th>
 		</tr>
 		{{#each getTotals}}
 			<tr>
-				<td>{{m}}/{{y}}</td><td>{{totescurr}}</td><td>{{balance}}</td>
+				<td>{{ContractID}}</td>
+				<td>{{m}}/{{y}}</td>
+				<td>{{asCurrency TotalNetSales}}</td>
+				<td>{{asCurrency balance}}</td>
+
+				<td>{{asCurrency TotalEncoding}}</td>
+				<td>{{asCurrency EncodingBalance}}</td>
+
+				<td>{{asCurrency TotalMedia}}</td>
+				<td>{{asCurrency MediaBalance}}</td>
 			</tr>
 		{{/each}}
 	</table>

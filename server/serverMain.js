@@ -6,14 +6,6 @@ Meteor.publish('Transactions', function(){
   return Transactions.find();
 });
 
-Meteor.publish('Fee', function(){
-  return Fee.find();
-});
-
-Meteor.publish('Tax', function(){
-  return Tax.find();
-});
-
 Meteor.publish('Currency', function(){
   return Currency.find();
 });
@@ -24,6 +16,14 @@ Meteor.publish('Totals', function(){
 
 Meteor.publish('Timers', function(){
   return Timers.find();
+});
+
+Meteor.publish('Contract', function(){
+  return Contract.find();
+});
+
+Meteor.publish('Regime', function(){
+  return Regime.find();
 });
 
 Meteor.startup(function () {
@@ -131,7 +131,20 @@ Meteor.startup(function () {
           console.info('tr', JSON.stringify(tr, null, 2));
         }
 
-        bulkOp.find({_id: tr._id}).update(tr);
+        bulkOp.find({_id: tr._id}).update({
+          $set:{
+            Region:tr.Region,
+            ContractID:tr.ContractID,
+            TaxRate:tr.TaxRate,
+            CurrencyRate:tr.CurrencyRate,
+            ConvertedValue:tr.ConvertedValue,
+            FeeRate:tr.FeeRate,
+            FeeValue:tr.FeeValue,
+            TaxValue:tr.TaxValue,
+            GrossSales:tr.GrossSales,
+            NetSaleValue:tr.NetSaleValue
+          }
+        });
 
       });
 
@@ -139,6 +152,7 @@ Meteor.startup(function () {
 
       bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
         timerDone();
+        console.info('enrichTransactions done');
         if (err) {
           console.error('Exception enriching Transactions', err);
         }
@@ -174,20 +188,36 @@ Meteor.startup(function () {
     },
 
     salesTotals: function() {
+      console.info('salesTotals starting');
       // Meteor.call('removeAllTotals');
       Util.timerReadout('salesTotalsReadout', function() {        
         Totals.remove({});
+
+
         var pipeline = [
+                        {
+                          $match:{
+                            $and:[
+                              {ContractID:{$ne:null}},
+                              {ContractID:{$exists:true}}
+                            ]
+                          }
+                        },
                         { $group:
                           {
-                            _id : { m: "$m", y: "$y" },
-                            totalAmount: {
-                              $sum:   "$NetSaleValue"
+                            _id:{
+                              m:"$m",
+                              y:"$y",
+                              ContractID:"$ContractID"
+                            },
+                            TotalNetSales: {
+                              $sum:"$NetSaleValue"
                             }
                           }
                         },
                         {
                           $sort:{
+                            '_id.ContractID':1,
                             '_id.y':1,
                             '_id.m':1
                           }
@@ -196,22 +226,105 @@ Meteor.startup(function () {
 
         var result = Transactions.aggregate(pipeline);
 
-
+        var currentContract = null;
         var balance = 0.0;
+        console.info('result.length', result.length);
         for (var i=0; i < result.length; i++) {
-          if (!isNaN(result[i].totalAmount)) {
-            balance += result[i].totalAmount;
+
+          console.info('result', result[i]);
+          if (!isNaN(result[i].TotalNetSales)) {
+            if (result[i]._id.ContractID !== currentContract) {
+              currentContract = result[i]._id.ContractID;
+              balance = 0.0;
+            }
+
+            balance += result[i].TotalNetSales;
             Totals.insert(
               {
                 balance:balance,
-                totes: result[i].totalAmount,
+                TotalNetSales:result[i].TotalNetSales,
                 m: result[i]._id.m,
-                y: result[i]._id.y
+                y: result[i]._id.y,
+                ContractID: result[i]._id.ContractID
               }
             );
           }
         }
+
+        pipeline = [
+                        { $group:
+                          {
+                            _id:{
+                              m:"$m",
+                              y:"$y",
+                              ContractID:"$ContractID"
+                            },
+                            TotalEncoding: {
+                              $sum:"$EncodingU$"
+                            },
+                            TotalMedia: {
+                              $sum:"$MediaU$"
+                            }
+                          }
+                        },
+                        {
+                          $sort:{
+                            '_id.ContractID':1,
+                            '_id.y':1,
+                            '_id.m':1
+                          }
+                        }
+                      ];
+
+        result = Recoupable.aggregate(pipeline);
+
+        currentContract = null;
+        var MediaBalance = 0.0, EncodingBalance = 0.0;
+        console.info('second pass: result.length', result.length);
+        
+        for (i=0; i < result.length; i++) {
+
+          console.info('result', result[i]);
+          var TotalMedia = result[i].TotalMedia;
+          var TotalEncoding = result[i].TotalEncoding;
+
+          if (isNaN(TotalMedia)) {
+            TotalMedia = 0.0;
+          }
+
+          if (isNaN(TotalEncoding)) {
+            TotalEncoding = 0.0;
+          }
+
+          if (result[i]._id.ContractID !== currentContract) {
+            currentContract = result[i]._id.ContractID;
+            MediaBalance = 0.0;
+            EncodingBalance = 0.0;
+          }
+
+          MediaBalance += TotalMedia;
+          EncodingBalance += TotalEncoding;
+
+          Totals.upsert({
+                m: result[i]._id.m,
+                y: result[i]._id.y,
+                ContractID: result[i]._id.ContractID
+              }, {$set:{
+                  TotalMedia:TotalMedia,
+                  TotalEncoding:TotalEncoding,
+                  MediaBalance:MediaBalance,
+                  EncodingBalance:EncodingBalance
+
+              }});
+        }
+
       });
     }
   });
+
+  if (Transactions.find({ContractID:{$exists:true}}).count() === 0) {
+    console.info('No contract ID on any transaction, running enrichTransactions');
+    Meteor.call('enrichTransactions');
+  }
+
 });
