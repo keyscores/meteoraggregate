@@ -53,16 +53,20 @@ Meteor.startup(function () {
         Offshore: txv
       }});
 
-      timerDone();
-      // TODO: start totals calc
+      Meteor.call('enrichTransactions', function() {
+        timerDone();
+        Meteor.call('salesTotals');
+      });
+
     },
-    enrichTransactions: function(cr, crv) {
+    enrichTransactions: function() {
       var timerDone = Util.timerReadout('enrichTransactionsReadout');
       var coll = Transactions.rawCollection();
       var bulkOp = coll.initializeUnorderedBulkOp();
-
+      var count = 0;
 
       Transactions.find({}).forEach(function(tr) {
+        var idx = count++;
 
         var region = Region.findOne({'CountryCode':tr.CountryCode});
         if (!region) {
@@ -81,19 +85,57 @@ Meteor.startup(function () {
           }
         }
         
+        var regime = (contract) ?
+            Regime.findOne({Regime:contract.Regime, Year:tr.y})
+            : null;
 
-        bulkOp.find({_id: tr._id}).update({$set:{
-          Region:     (region)    ? region.Region         : null,
-          ContractID: (contract)  ? contract.ContractID   : null,
-          FeeRate:    (contract)  ? contract.Fee          : tr.FeeRate,
-          Regime:     (contract)  ? Regime.findOne(
-                                    {Regime:contract.Regime, Year:tr.y})      
-                                                          : null,
+        if (regime) {
+          regime = regime.Offshore;
+        }
 
+        tr.Region =     (region)    ? region.Region         : null;
+        tr.ContractID = (contract)  ? contract.ContractID   : null;
+        tr.TaxRate =    regime;
 
-        }});
+        var currency = Currency.findOne({
+          CountryCode:tr.CustomerCurrency,
+          m:tr.m,
+          y:tr.y
+        });
+
+        if (currency) {
+          tr.CurrencyRate = currency.CurrencyValue;
+          tr.ConvertedValue = tr.CustomerPrice * currency.CurrencyValue;
+          // tr.NetSaleValue = ((tr.TaxValue)+(tr.FeeValue)+(tr.ConvertedValue * currency.CurrencyValue))*tr.Units;
+        }
+
+        // contract fee
+        if (contract) {
+          tr.FeeRate = contract.Fee;
+          tr.FeeValue = tr.CustomerPrice * tr.FeeRate * tr.CurrencyRate;
+          // tr.NetSaleValue = ((tr.ConvertedValue)+(tr.TaxValue)+(tr.CustomerPrice*tr.FeeRate))*tr.Units;
+        }
+
+        if (tr.TaxRate) {
+          tr.TaxValue = tr.CustomerPrice * tr.TaxRate * tr.CurrencyRate;
+          // tr.NetSaleValue = ((tr.ConvertedValue)+(tr.FeeValue)+(tr.CustomerPrice*txv))*tr.Units;
+        }
+
+        tr.GrossSales = tr.Units * tr.CustomerPrice * tr.CurrencyRate;
+
+        tr.NetSaleValue = (tr.Units * tr.CustomerPrice * tr.CurrencyRate)
+            - (tr.Units * tr.CustomerPrice * tr.CurrencyRate * tr.FeeRate)
+            - (tr.Units * tr.CustomerPrice * tr.CurrencyRate * tr.TaxRate);
+
+        if (idx < 10) {
+          console.info('tr', JSON.stringify(tr, null, 2));
+        }
+
+        bulkOp.find({_id: tr._id}).update(tr);
 
       });
+
+
 
       bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
         timerDone();
@@ -103,43 +145,18 @@ Meteor.startup(function () {
       }));
 
     },
-    chgCurrValue: function(cr, crv) {
+    chgCurrValue: function(_id, crv) {
       var timerDone = Util.timerReadout('currencyKickoffReadout');
       var timerDone2 = Util.timerReadout('currencyReadout');
-      var arg = cr.split(" ");
 
-      var tmp2 = Currency.find({CountryCode: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])}).fetch();
-      var tmp = Transactions.find({CustomerCurrency: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])});
-
-      // crv =  parseInt(crv);
-
-      Currency.update({_id: tmp2[0]._id},{$set:{
+      Currency.update({_id:_id},{$set:{
         CurrencyValue: crv
       }});
 
-      var t1 = (new Date()).getTime();
-
-      var coll = Transactions.rawCollection();
-      var bulkOp = coll.initializeUnorderedBulkOp();
-
-      tmp.forEach(function(tr) {
-        bulkOp.find({_id: tr._id}).update({$set:{
-          CurrencyRate: crv*1,
-          ConvertedValue: tr.CustomerPrice*crv,
-          NetSaleValue : ((tr.TaxValue)+(tr.FeeValue)+(tr.ConvertedValue * crv))*tr.Units
-        }});
-
+      Meteor.call('enrichTransactions', function() {
+        timerDone();
+        Meteor.call('salesTotals');
       });
-
-      timerDone();
-      bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
-        console.info('Bulk op done', (new Date()).getTime());
-        timerDone2();
-        if (err) {
-          console.error('Exception updating Transactions', err);
-        }
-      }));
-      console.info('starting bulk op done', (new Date()).getTime());
 
     },
 
@@ -150,16 +167,15 @@ Meteor.startup(function () {
         Fee: fev
       }});
 
-      timerDone();
-      // TODO: start totals calc
-
+      Meteor.call('enrichTransactions', function() {
+        timerDone();
+        Meteor.call('salesTotals');
+      });
     },
-
 
     salesTotals: function() {
       // Meteor.call('removeAllTotals');
-      Util.timerReadout('salesTotalsReadout', function() {
-
+      Util.timerReadout('salesTotalsReadout', function() {        
         Totals.remove({});
         var pipeline = [
                         { $group:

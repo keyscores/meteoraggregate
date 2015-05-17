@@ -23,7 +23,7 @@
 		<label for="currency">Currency:</label>
 		<select name="currency" id="currency">
 			{{#each getCurrency}}
-				<option>{{CountryCode}} {{m}} {{y}}</option>
+				<option value="{{_id}}">{{CountryCode}} {{m}} {{y}}</option>
 			{{/each}}
 		</select>
 		<input type="text" id="currValue" name="currValue" size="5" maxlength="5">
@@ -75,7 +75,6 @@
 		{{/each}}
 	</table>
 	<button name="calc" id="calc">CALC</button>
-	<button id="enrich-transactions">Enrich</button>
 </template>
 <template name="timers">
 	<table border="1">

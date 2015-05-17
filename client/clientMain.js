@@ -70,21 +70,15 @@ Template.timers.helpers({
   },
   enrichTransactionsReadout:function() {
     return Timers.findOne({name:'enrichTransactionsReadout'});
-  },
+  }
 
-})
+});
 
 Template.totals.events({
   "click #calc": function (e) {
     // Meteor.call("removeAllTotals");
     Meteor.call("salesTotals", function() {
       console.log('calc button done');
-    });
-  },
-  "click #enrich-transactions": function (e) {
-    // Meteor.call("removeAllTotals");
-    Meteor.call("enrichTransactions", function() {
-      console.log('enrichment is done');
     });
   }
 });
@@ -106,26 +100,16 @@ Template.taxrates.events({
 
 Template.currency.events({
   "change #currency": function(e,t) {
-    var cr = t.find('#currency').value;
-    console.log(cr);
-    var arg = cr.split(" ");
-    console.log(arg);
-    var tmp = Currency.find({CountryCode: arg[0], m: parseInt(arg[1]), y: parseInt(arg[2])}).fetch();
-    console.log(tmp);
-    t.find('#currValue').value = tmp[0].CurrencyValue;
+    var _id = t.find('#currency').value;
+    var tmp = Currency.findOne({_id:_id});
+    t.find('#currValue').value = tmp.CurrencyValue;
   },
 
   "change #currValue": function(e,t) {
-    var cr = t.find('#currency').value;
+    var _id = t.find('#currency').value;
     var crv = t.find('#currValue').value;
 
-    console.log('starting currency change');
-    Meteor.call('chgCurrValue', cr, crv, function() {
-      console.log('done with currency change, starting sales totals');
-      Meteor.call('salesTotals', function() {
-        console.log('sales totals done now');
-      });
-    });
+    Meteor.call('chgCurrValue', _id, crv);
   }
 });
 
