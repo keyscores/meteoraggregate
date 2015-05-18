@@ -59,9 +59,18 @@
 	</div>
 </template>
 
-<template name="totals">
-  Sanity Test of Reactive updates. Number of Documents in Tasks collection: {{tasks}}
-  
+<template name="totals">  
+	<div>
+		Contract Filter
+		<select id="contract-filter">
+			<option value="any">Any</option>
+			{{#each getContracts}}
+				<option value="{{ContractID}}">
+					{{ContractID}} {{VendorIdentifier}} ({{Region}})
+				</option>
+			{{/each}}
+		</select>
+	</div>
 	<table>
 		<tr>
 			<th>ContractID</th>
@@ -72,19 +81,23 @@
 			<th>Encoding Bal</th>
 			<th>Media Tot</th>
 			<th>Media Bal</th>
+
+			<th>Net Bal</th>
 		</tr>
 		{{#each getTotals}}
 			<tr>
 				<td>{{ContractID}}</td>
 				<td>{{m}}/{{y}}</td>
 				<td>{{asCurrency TotalNetSales}}</td>
-				<td>{{asCurrency balance}}</td>
+				<td>{{asCurrency NetSalesBalance}}</td>
 
 				<td>{{asCurrency TotalEncoding}}</td>
 				<td>{{asCurrency EncodingBalance}}</td>
 
 				<td>{{asCurrency TotalMedia}}</td>
 				<td>{{asCurrency MediaBalance}}</td>
+
+				<td>{{asCurrency NetBalance}}</td>
 			</tr>
 		{{/each}}
 	</table>

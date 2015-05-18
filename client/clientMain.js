@@ -33,7 +33,15 @@ Template.totals.helpers({
   getTotals: function () {
     //Meteor.call(salesTotals)
     //Meteor.call('removeAllTotals');
-    return Totals.find({}, {sort:{ContractID:1, y:1, m:1}});
+    var criteria;
+    var filter = Session.get('totalsContractFilter');
+    if (filter === 'any' || typeof filter === 'undefined') {
+      criteria = {};
+    } else {
+      criteria = {ContractID:parseInt(filter)};
+    }
+
+    return Totals.find(criteria, {sort:{ContractID:1, y:1, m:1}});
   },
   
   tasks: function () {
@@ -45,7 +53,9 @@ Template.totals.helpers({
     return currency;
   },
 
-
+  getContracts: function () {
+    return Contract.find({},{sort:{ContractID:1, VendorIdentifier: 1, Region:1}});
+  }
 });
 
 Template.timers.helpers({
@@ -79,6 +89,9 @@ Template.totals.events({
     Meteor.call("salesTotals", function() {
       console.log('calc button done');
     });
+  },
+  "change #contract-filter": function (ev) {
+    Session.set('totalsContractFilter', $(ev.target).val());
   }
 });
 

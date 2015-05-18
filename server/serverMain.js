@@ -194,135 +194,151 @@ Meteor.startup(function () {
     salesTotals: function() {
       console.info('salesTotals starting');
       // Meteor.call('removeAllTotals');
-      Util.timerReadout('salesTotalsReadout', function() {        
-        Totals.remove({});
+      var timerDone = Util.timerReadout('salesTotalsReadout')
+      Totals.remove({});
 
 
-        var pipeline = [
+      var pipeline = [
+                      {
+                        $match:{
+                          $and:[
+                            {ContractID:{$ne:null}},
+                            {ContractID:{$exists:true}}
+                          ]
+                        }
+                      },
+                      { $group:
                         {
-                          $match:{
-                            $and:[
-                              {ContractID:{$ne:null}},
-                              {ContractID:{$exists:true}}
-                            ]
-                          }
-                        },
-                        { $group:
-                          {
-                            _id:{
-                              m:"$m",
-                              y:"$y",
-                              ContractID:"$ContractID"
-                            },
-                            TotalNetSales: {
-                              $sum:"$NetSaleValue"
-                            }
-                          }
-                        },
-                        {
-                          $sort:{
-                            '_id.ContractID':1,
-                            '_id.y':1,
-                            '_id.m':1
+                          _id:{
+                            m:"$m",
+                            y:"$y",
+                            ContractID:"$ContractID"
+                          },
+                          TotalNetSales: {
+                            $sum:"$NetSaleValue"
                           }
                         }
-                      ];
-
-        var result = Transactions.aggregate(pipeline);
-
-        var currentContract = null;
-        var balance = 0.0;
-        console.info('result.length', result.length);
-        for (var i=0; i < result.length; i++) {
-
-          console.info('result', result[i]);
-          if (!isNaN(result[i].TotalNetSales)) {
-            if (result[i]._id.ContractID !== currentContract) {
-              currentContract = result[i]._id.ContractID;
-              balance = 0.0;
-            }
-
-            balance += result[i].TotalNetSales;
-            Totals.insert(
-              {
-                balance:balance,
-                TotalNetSales:result[i].TotalNetSales,
-                m: result[i]._id.m,
-                y: result[i]._id.y,
-                ContractID: result[i]._id.ContractID
-              }
-            );
-          }
-        }
-
-        pipeline = [
-                        { $group:
-                          {
-                            _id:{
-                              m:"$m",
-                              y:"$y",
-                              ContractID:"$ContractID"
-                            },
-                            TotalEncoding: {
-                              $sum:"$EncodingU$"
-                            },
-                            TotalMedia: {
-                              $sum:"$MediaU$"
-                            }
-                          }
-                        },
-                        {
-                          $sort:{
-                            '_id.ContractID':1,
-                            '_id.y':1,
-                            '_id.m':1
-                          }
+                      },
+                      {
+                        $sort:{
+                          '_id.ContractID':1,
+                          '_id.y':1,
+                          '_id.m':1
                         }
-                      ];
+                      }
+                    ];
 
-        result = Recoupable.aggregate(pipeline);
+      var result = Transactions.aggregate(pipeline);
 
-        currentContract = null;
-        var MediaBalance = 0.0, EncodingBalance = 0.0;
-        console.info('second pass: result.length', result.length);
-        
-        for (i=0; i < result.length; i++) {
+      var currentContract = null;
+      var balance = 0.0;
+      console.info('result.length', result.length);
+      for (var i=0; i < result.length; i++) {
 
-          console.info('result', result[i]);
-          var TotalMedia = result[i].TotalMedia;
-          var TotalEncoding = result[i].TotalEncoding;
-
-          if (isNaN(TotalMedia)) {
-            TotalMedia = 0.0;
-          }
-
-          if (isNaN(TotalEncoding)) {
-            TotalEncoding = 0.0;
-          }
-
+        console.info('result', result[i]);
+        if (!isNaN(result[i].TotalNetSales)) {
           if (result[i]._id.ContractID !== currentContract) {
             currentContract = result[i]._id.ContractID;
-            MediaBalance = 0.0;
-            EncodingBalance = 0.0;
+            balance = 0.0;
           }
 
-          MediaBalance += TotalMedia;
-          EncodingBalance += TotalEncoding;
+          balance += result[i].TotalNetSales;
+          Totals.insert(
+            {
+              NetSalesBalance:balance,
+              TotalNetSales:result[i].TotalNetSales,
+              m: result[i]._id.m,
+              y: result[i]._id.y,
+              ContractID: result[i]._id.ContractID
+            }
+          );
+        }
+      }
 
-          Totals.upsert({
-                m: result[i]._id.m,
-                y: result[i]._id.y,
-                ContractID: result[i]._id.ContractID
-              }, {$set:{
-                  TotalMedia:TotalMedia,
-                  TotalEncoding:TotalEncoding,
-                  MediaBalance:MediaBalance,
-                  EncodingBalance:EncodingBalance
+      pipeline = [
+                      { $group:
+                        {
+                          _id:{
+                            m:"$m",
+                            y:"$y",
+                            ContractID:"$ContractID"
+                          },
+                          TotalEncoding: {
+                            $sum:"$EncodingU$"
+                          },
+                          TotalMedia: {
+                            $sum:"$MediaU$"
+                          }
+                        }
+                      },
+                      {
+                        $sort:{
+                          '_id.ContractID':1,
+                          '_id.y':1,
+                          '_id.m':1
+                        }
+                      }
+                    ];
 
-              }});
+      result = Recoupable.aggregate(pipeline);
+
+      currentContract = null;
+      var MediaBalance = 0.0, EncodingBalance = 0.0;
+      console.info('second pass: result.length', result.length);
+      
+      for (i=0; i < result.length; i++) {
+
+        console.info('result', result[i]);
+        var TotalMedia = result[i].TotalMedia;
+        var TotalEncoding = result[i].TotalEncoding;
+
+        if (isNaN(TotalMedia)) {
+          TotalMedia = 0.0;
         }
 
+        if (isNaN(TotalEncoding)) {
+          TotalEncoding = 0.0;
+        }
+
+        if (result[i]._id.ContractID !== currentContract) {
+          currentContract = result[i]._id.ContractID;
+          MediaBalance = 0.0;
+          EncodingBalance = 0.0;
+        }
+
+        MediaBalance += TotalMedia;
+        EncodingBalance += TotalEncoding;
+
+        Totals.upsert({
+              m: result[i]._id.m,
+              y: result[i]._id.y,
+              ContractID: result[i]._id.ContractID
+            }, {$set:{
+                TotalMedia:TotalMedia,
+                TotalEncoding:TotalEncoding,
+                MediaBalance:MediaBalance,
+                EncodingBalance:EncodingBalance
+
+            }});
+      }
+
+      var RawTotals = Totals.rawCollection();
+      var bulkOp = RawTotals.initializeUnorderedBulkOp();
+      Totals.find({}, {sort:{ContractID:1, y:1, m:1}}).forEach(function(tot) {
+        bulkOp.find({_id:tot._id}, {
+          $set:{
+            NetBalance:tot.NetSalesBalance - (tot.EncodingBalance + tot.MediaBalance)
+          }
+        });
       });
+      
+      bulkOp.execute(function(err, result) {
+        timerDone();
+        console.info('salesTotals done');
+        if (err) {
+          console.error('Exception running salesTotals', err);
+        }
+      })
     }
   });
 
