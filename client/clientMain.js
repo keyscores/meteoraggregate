@@ -66,6 +66,9 @@ Template.timers.helpers({
   },
   enrichTransactionsReadout:function() {
     return Timers.findOne({name:'enrichTransactionsReadout'});
+  },
+  enrichTransactionsSetupReadout:function() {
+    return Timers.findOne({name:'enrichTransactionsSetupReadout'});
   }
 
 });

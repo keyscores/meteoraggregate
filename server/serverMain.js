@@ -61,93 +61,97 @@ Meteor.startup(function () {
     },
     enrichTransactions: function() {
       var timerDone = Util.timerReadout('enrichTransactionsReadout');
-      var coll = Transactions.rawCollection();
-      var bulkOp = coll.initializeUnorderedBulkOp();
-      var count = 0;
+      var bulkOp, coll;
+      Util.timerReadout('enrichTransactionsSetupReadout', function() {
 
-      Transactions.find({}).forEach(function(tr) {
-        var idx = count++;
+        coll = Transactions.rawCollection();
+        bulkOp = coll.initializeUnorderedBulkOp();
+        var count = 0;
 
-        var region = Region.findOne({'CountryCode':tr.CountryCode});
-        if (!region) {
-          console.error('no region for country', tr.CountryCode);
-        }
+        Transactions.find({}).forEach(function(tr) {
+          var idx = count++;
 
-        var contract = null;
+          var region = Region.findOne({'CountryCode':tr.CountryCode});
+          if (!region) {
+            console.error('no region for country', tr.CountryCode);
+          }
 
-        if (region) {
-          contract = Contract.findOne({
-            VendorIdentifier:tr.VendorIdentifier,
-            Region:region.Region
+          var contract = null;
+
+          if (region) {
+            contract = Contract.findOne({
+              VendorIdentifier:tr.VendorIdentifier,
+              Region:region.Region
+            });
+            if (!contract) {
+              console.error('no contract for vendor', tr.VendorIdentifier, 'region', region.Region);
+            }
+          }
+          
+          var regime = (contract) ?
+              Regime.findOne({Regime:contract.Regime, Year:tr.y})
+              : null;
+
+          if (regime) {
+            regime = regime.Offshore;
+          }
+
+          tr.Region =     (region)    ? region.Region         : null;
+          tr.ContractID = (contract)  ? contract.ContractID   : null;
+          tr.TaxRate =    regime;
+
+          var currency = Currency.findOne({
+            CountryCode:tr.CustomerCurrency,
+            m:tr.m,
+            y:tr.y
           });
-          if (!contract) {
-            console.error('no contract for vendor', tr.VendorIdentifier, 'region', region.Region);
+
+          if (currency) {
+            tr.CurrencyRate = currency.CurrencyValue;
+            tr.ConvertedValue = tr.CustomerPrice * currency.CurrencyValue;
+            // tr.NetSaleValue = ((tr.TaxValue)+(tr.FeeValue)+(tr.ConvertedValue * currency.CurrencyValue))*tr.Units;
           }
-        }
-        
-        var regime = (contract) ?
-            Regime.findOne({Regime:contract.Regime, Year:tr.y})
-            : null;
 
-        if (regime) {
-          regime = regime.Offshore;
-        }
-
-        tr.Region =     (region)    ? region.Region         : null;
-        tr.ContractID = (contract)  ? contract.ContractID   : null;
-        tr.TaxRate =    regime;
-
-        var currency = Currency.findOne({
-          CountryCode:tr.CustomerCurrency,
-          m:tr.m,
-          y:tr.y
-        });
-
-        if (currency) {
-          tr.CurrencyRate = currency.CurrencyValue;
-          tr.ConvertedValue = tr.CustomerPrice * currency.CurrencyValue;
-          // tr.NetSaleValue = ((tr.TaxValue)+(tr.FeeValue)+(tr.ConvertedValue * currency.CurrencyValue))*tr.Units;
-        }
-
-        // contract fee
-        if (contract) {
-          tr.FeeRate = contract.Fee;
-          tr.FeeValue = tr.CustomerPrice * tr.FeeRate * tr.CurrencyRate;
-          // tr.NetSaleValue = ((tr.ConvertedValue)+(tr.TaxValue)+(tr.CustomerPrice*tr.FeeRate))*tr.Units;
-        }
-
-        if (tr.TaxRate) {
-          tr.TaxValue = tr.CustomerPrice * tr.TaxRate * tr.CurrencyRate;
-          // tr.NetSaleValue = ((tr.ConvertedValue)+(tr.FeeValue)+(tr.CustomerPrice*txv))*tr.Units;
-        }
-
-        tr.GrossSales = tr.Units * tr.CustomerPrice * tr.CurrencyRate;
-
-        tr.NetSaleValue = (tr.Units * tr.CustomerPrice * tr.CurrencyRate)
-            - (tr.Units * tr.CustomerPrice * tr.CurrencyRate * tr.FeeRate)
-            - (tr.Units * tr.CustomerPrice * tr.CurrencyRate * tr.TaxRate);
-
-        if (idx < 10) {
-          console.info('tr', JSON.stringify(tr, null, 2));
-        }
-
-        bulkOp.find({_id: tr._id}).update({
-          $set:{
-            Region:tr.Region,
-            ContractID:tr.ContractID,
-            TaxRate:tr.TaxRate,
-            CurrencyRate:tr.CurrencyRate,
-            ConvertedValue:tr.ConvertedValue,
-            FeeRate:tr.FeeRate,
-            FeeValue:tr.FeeValue,
-            TaxValue:tr.TaxValue,
-            GrossSales:tr.GrossSales,
-            NetSaleValue:tr.NetSaleValue
+          // contract fee
+          if (contract) {
+            tr.FeeRate = contract.Fee;
+            tr.FeeValue = tr.CustomerPrice * tr.FeeRate * tr.CurrencyRate;
+            // tr.NetSaleValue = ((tr.ConvertedValue)+(tr.TaxValue)+(tr.CustomerPrice*tr.FeeRate))*tr.Units;
           }
+
+          if (tr.TaxRate) {
+            tr.TaxValue = tr.CustomerPrice * tr.TaxRate * tr.CurrencyRate;
+            // tr.NetSaleValue = ((tr.ConvertedValue)+(tr.FeeValue)+(tr.CustomerPrice*txv))*tr.Units;
+          }
+
+          tr.GrossSales = tr.Units * tr.CustomerPrice * tr.CurrencyRate;
+
+          tr.NetSaleValue = (tr.Units * tr.CustomerPrice * tr.CurrencyRate)
+              - (tr.Units * tr.CustomerPrice * tr.CurrencyRate * tr.FeeRate)
+              - (tr.Units * tr.CustomerPrice * tr.CurrencyRate * tr.TaxRate);
+
+          if (idx < 10) {
+            console.info('tr', JSON.stringify(tr, null, 2));
+          }
+
+          bulkOp.find({_id: tr._id}).update({
+            $set:{
+              Region:tr.Region,
+              ContractID:tr.ContractID,
+              TaxRate:tr.TaxRate,
+              CurrencyRate:tr.CurrencyRate,
+              ConvertedValue:tr.ConvertedValue,
+              FeeRate:tr.FeeRate,
+              FeeValue:tr.FeeValue,
+              TaxValue:tr.TaxValue,
+              GrossSales:tr.GrossSales,
+              NetSaleValue:tr.NetSaleValue
+            }
+          });
+
         });
 
       });
-
 
 
       bulkOp.execute(Meteor.bindEnvironment(function (err, result) {

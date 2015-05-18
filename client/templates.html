@@ -93,17 +93,12 @@
 <template name="timers">
 	<table border="1">
 		<tr>
-			<td>Currency (total including bulk op)</td><td>{{ currencyReadout.t }}ms</td><td>{{ currencyReadout.d }}</td>
+			<td>Enrich (incl setup+bulk)</td><td>{{ enrichTransactionsReadout.t }}ms</td><td>{{ enrichTransactionsReadout.d }}</td>
 		</tr>
 		<tr>
-			<td>Currency (start bulk op)</td><td>{{ currencyKickoffReadout.t }}ms</td><td>{{ currencyKickoffReadout.d }}</td>
+			<td>Enrich (setup only)</td><td>{{ enrichTransactionsSetupReadout.t }}ms</td><td>{{ enrichTransactionsSetupReadout.d }}</td>
 		</tr>
-		<tr>
-			<td>Fee</td><td>{{ feeReadout.t }}ms</td><td>{{ feeReadout.d }}</td>
-		</tr>
-		<tr>
-			<td>Tax</td><td>{{ taxReadout.t }}ms</td><td>{{ taxReadout.d }}</td>
-		</tr>
+
 		<tr>
 			<td>Sales Totals</td><td>{{ salesTotalsReadout.t }}ms</td><td>{{ salesTotalsReadout.d }}</td>
 		</tr>
