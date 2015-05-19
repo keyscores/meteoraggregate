@@ -326,15 +326,22 @@ Meteor.startup(function () {
       var bulkOp = RawTotals.initializeUnorderedBulkOp();
       var bulkCount = 0;
       Totals.find({}, {sort:{ContractID:1, y:1, m:1}}).forEach(function(tot) {
+        var nsb = tot.NetSalesBalance || 0;
+        var eb = tot.EncodingBalance || 0;
+        var mb = tot.MediaBalance || 0;
+
         console.info(
             'ContractID', tot.ContractID,
             'y', tot.y,
             'm', tot.m,
-            'calc NetBalance', tot.NetSalesBalance, '- (', tot.EncodingBalance, '+', tot.MediaBalance, ') = ', tot.NetSalesBalance - (tot.EncodingBalance + tot.MediaBalance));
+            'calc NetBalance', nsb, '- (', eb, '+', mb, ') = ', nsb - (eb + mb));
 
-        bulkOp.find({_id:tot._id}, {
+        bulkOp.find({_id:tot._id}).update({
           $set:{
-            NetBalance:tot.NetSalesBalance - (tot.EncodingBalance + tot.MediaBalance)
+            NetBalance:nsb - (eb + mb),
+            EncodingBalance:eb,
+            MediaBalance:mb,
+            NetSalesBalance:nsb
           }
         });
         bulkCount++;
@@ -342,13 +349,13 @@ Meteor.startup(function () {
       
       if (bulkCount) {
 
-        bulkOp.execute(function(err, result) {
+        bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
           timerDone();
           console.info('salesTotals done');
           if (err) {
             console.error('Exception running salesTotals', err);
           }
-        });
+        }));
       } else {
         timerDone();
         console.info('no bulk operations?');
