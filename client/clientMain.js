@@ -1,6 +1,5 @@
 // counter starts at 0
 
-Meteor.subscribe('Transactions');
 Meteor.subscribe('Currency');
 Meteor.subscribe('Regime');
 Meteor.subscribe('Contract');

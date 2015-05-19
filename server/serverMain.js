@@ -2,9 +2,6 @@ Meteor.publish('Raw', function(){
   return Raw.find();
 });
 
-Meteor.publish('Transactions', function(){
-  return Transactions.find();
-});
 
 Meteor.publish('Currency', function(){
   return Currency.find();
@@ -27,7 +24,7 @@ Meteor.publish('Regime', function(){
 });
 
 Meteor.startup(function () {
-  return Meteor.methods({
+  Meteor.methods({
     removeAllFee: function() {
       return Fee.remove({});
     },
@@ -235,13 +232,16 @@ Meteor.startup(function () {
       console.info('result.length', result.length);
       for (var i=0; i < result.length; i++) {
 
-        console.info('result', result[i]);
         if (!isNaN(result[i].TotalNetSales)) {
           if (result[i]._id.ContractID !== currentContract) {
             currentContract = result[i]._id.ContractID;
             balance = 0.0;
           }
 
+          console.log('ContractID', result[i]._id.ContractID,
+            'y', result[i]._id.y,
+            'm', result[i]._id.m,
+            'balance', balance, 'TotalNetSales', result[i].TotalNetSales);
           balance += result[i].TotalNetSales;
           Totals.insert(
             {
@@ -288,7 +288,6 @@ Meteor.startup(function () {
       
       for (i=0; i < result.length; i++) {
 
-        console.info('result', result[i]);
         var TotalMedia = result[i].TotalMedia;
         var TotalEncoding = result[i].TotalEncoding;
 
@@ -322,27 +321,48 @@ Meteor.startup(function () {
             }});
       }
 
+
       var RawTotals = Totals.rawCollection();
       var bulkOp = RawTotals.initializeUnorderedBulkOp();
+      var bulkCount = 0;
       Totals.find({}, {sort:{ContractID:1, y:1, m:1}}).forEach(function(tot) {
+        console.info(
+            'ContractID', tot.ContractID,
+            'y', tot.y,
+            'm', tot.m,
+            'calc NetBalance', tot.NetSalesBalance, '- (', tot.EncodingBalance, '+', tot.MediaBalance, ') = ', tot.NetSalesBalance - (tot.EncodingBalance + tot.MediaBalance));
+
         bulkOp.find({_id:tot._id}, {
           $set:{
             NetBalance:tot.NetSalesBalance - (tot.EncodingBalance + tot.MediaBalance)
           }
         });
+        bulkCount++;
       });
       
-      bulkOp.execute(function(err, result) {
+      if (bulkCount) {
+
+        bulkOp.execute(function(err, result) {
+          timerDone();
+          console.info('salesTotals done');
+          if (err) {
+            console.error('Exception running salesTotals', err);
+          }
+        });
+      } else {
         timerDone();
-        console.info('salesTotals done');
-        if (err) {
-          console.error('Exception running salesTotals', err);
-        }
-      })
+        console.info('no bulk operations?');
+      }
     }
   });
+  console.info('Checking if we need enrichTransactions...');
 
-  if (Transactions.find({ContractID:{$exists:true}}).count() === 0) {
+  if (Transactions.find({
+        $and:[
+          {ContractID:{$exists:true}},
+          {ContractID:{$ne:null}}
+        ]
+      }).count() === 0) {
     console.info('No contract ID on any transaction, running enrichTransactions');
     Meteor.call('enrichTransactions');
   }
