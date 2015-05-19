@@ -60,6 +60,21 @@ Meteor.startup(function () {
       var timerDone = Util.timerReadout('enrichTransactionsReadout');
       var bulkOp, coll;
       Util.timerReadout('enrichTransactionsSetupReadout', function() {
+        var regimeByYear = {};
+        Regime.find({}).forEach(function(r) {
+          regimeByYear[r.Regime + '::' + r.Year] = r;
+        });
+
+        var contractLookup = {};
+        Contract.find({}).forEach(function(c) {
+          contractLookup[c.VendorIdentifier + '::' + c.Region] = c;
+        });
+
+        var currencyLookup = {};
+        Currency.find({}).forEach(function(c) {
+          currencyLookup[c.CountryCode + '::' + c.y + '::' + c.m] = c;
+        });
+
 
         coll = Transactions.rawCollection();
         bulkOp = coll.initializeUnorderedBulkOp();
@@ -76,17 +91,18 @@ Meteor.startup(function () {
           var contract = null;
 
           if (region) {
-            contract = Contract.findOne({
-              VendorIdentifier:tr.VendorIdentifier,
-              Region:region.Region
-            });
+            contract = contractLookup[tr.VendorIdentifier + '::' + region.Region];
+            // Contract.findOne({
+            //   VendorIdentifier:tr.VendorIdentifier,
+            //   Region:region.Region
+            // });
             if (!contract) {
               console.error('no contract for vendor', tr.VendorIdentifier, 'region', region.Region);
             }
           }
           
           var regime = (contract) ?
-              Regime.findOne({Regime:contract.Regime, Year:tr.y})
+              regimeByYear[contract.Regime + '::' + tr.y]//Regime.findOne({Regime:contract.Regime, Year:tr.y})
               : null;
 
           if (regime) {
@@ -97,11 +113,12 @@ Meteor.startup(function () {
           tr.ContractID = (contract)  ? contract.ContractID   : null;
           tr.TaxRate =    regime;
 
-          var currency = Currency.findOne({
-            CountryCode:tr.CustomerCurrency,
-            m:tr.m,
-            y:tr.y
-          });
+          var currency = currencyLookup[tr.CustomerCurrency + '::' + tr.y + '::' + tr.m];
+          // Currency.findOne({
+          //   CountryCode:tr.CustomerCurrency,
+          //   m:tr.m,
+          //   y:tr.y
+          // });
 
           if (currency) {
             tr.CurrencyRate = currency.CurrencyValue;
