@@ -1,3 +1,216 @@
+function backfillTotals() {
+  var now = new Date();
+  var thisYear = 1900 + now.getYear();
+  var thisMonth = now.getMonth() + 1;
+  var firstYear = thisYear - 3;
+
+  var yearMonths = {};
+  Totals.find({}).forEach(function(t) {
+    yearMonths[t.ContractID + '::' + t.y + '::' + t.m] = 1;
+  });
+
+  Contract.find({}).forEach(function(contract) {
+
+
+    for (var y = firstYear; y <= thisYear; y++) {
+      var maxMonth = (y === thisYear) ? thisMonth : 12;
+      for (var m = 1; m <= maxMonth; m++) {
+        var criteria = {m:m, y:y, ContractID:contract.ContractID}; 
+        if (!yearMonths[contract.ContractID + '::' + y + '::' + m]) {
+          Totals.insert(criteria);
+        }
+      }
+    }
+  });
+}
+
+function runTotalNetSalesPipeline(cb) {
+  cb = cb || _.noop;
+  var pipeline = [
+                  {
+                    $match:{
+                      $and:[
+                        {ContractID:{$ne:null}},
+                        {ContractID:{$exists:true}}
+                      ]
+                    }
+                  },
+                  { $group:
+                    {
+                      _id:{
+                        m:"$m",
+                        y:"$y",
+                        ContractID:"$ContractID"
+                      },
+                      TotalNetSales: {
+                        $sum:"$NetSaleValue"
+                      }
+                    }
+                  },
+                  {
+                    $sort:{
+                      '_id.ContractID':1,
+                      '_id.y':1,
+                      '_id.m':1
+                    }
+                  }
+                ];
+
+  var result = Transactions.aggregate(pipeline);
+
+  var RawTotals = Totals.rawCollection();
+  var bulkOp = RawTotals.initializeUnorderedBulkOp();
+
+  for (var i=0; i < result.length; i++) {
+
+    if (!isNaN(result[i].TotalNetSales)) {
+      bulkOp.find(
+        {
+          m: result[i]._id.m,
+          y: result[i]._id.y,
+          ContractID: result[i]._id.ContractID
+        }).upsert().update(
+        {
+          $set:{TotalNetSales:result[i].TotalNetSales}
+        }        
+      );
+    }
+  }
+
+  bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
+    if (!err) {
+      cb();
+    } else {
+      console.error('runTotalNetSalesPipeline ERROR', err);
+    }
+  }));
+
+}
+
+function runRecoupablePipeline(cb) {
+  cb = cb || _.noop;
+
+  var pipeline = [
+                  { $group:
+                    {
+                      _id:{
+                        m:"$m",
+                        y:"$y",
+                        ContractID:"$ContractID"
+                      },
+                      TotalEncoding: {
+                        $sum:"$EncodingU$"
+                      },
+                      TotalMedia: {
+                        $sum:"$MediaU$"
+                      }
+                    }
+                  },
+                  {
+                    $sort:{
+                      '_id.ContractID':1,
+                      '_id.y':1,
+                      '_id.m':1
+                    }
+                  }
+                ];
+
+  var result = Recoupable.aggregate(pipeline);
+
+  var RawTotals = Totals.rawCollection();
+  var bulkOp = RawTotals.initializeUnorderedBulkOp();
+
+  for (i=0; i < result.length; i++) {
+
+    var TotalMedia = result[i].TotalMedia;
+    var TotalEncoding = result[i].TotalEncoding;
+
+    if (isNaN(TotalMedia) || typeof TotalMedia === 'undefined') {
+      TotalMedia = 0.0;
+    }
+
+    if (isNaN(TotalEncoding) || typeof TotalEncoding === 'undefined') {
+      TotalEncoding = 0.0;
+    }
+
+    bulkOp.find({
+          m: result[i]._id.m,
+          y: result[i]._id.y,
+          ContractID: result[i]._id.ContractID
+        }).upsert().update({$set:{
+            TotalMedia:TotalMedia,
+            TotalEncoding:TotalEncoding
+        }});
+  }
+
+
+
+  bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
+    if (!err) {
+      cb();
+    } else {
+      console.error('runRecoupablePipeline ERROR', err);
+    }
+  }));
+
+}
+
+function runBalances(cb) {
+  cb = cb || _.noop;
+
+  var RawTotals = Totals.rawCollection();
+  var bulkOp = RawTotals.initializeUnorderedBulkOp();
+
+  var netSalesBalance = 0;
+  var encodingBalance = 0;
+  var mediaBalance = 0;
+  var lastMonthNetBalance = 0;
+  var currentContract = null;
+
+
+  Totals.find({}, {sort:{ContractID:1, y:1, m:1}}).forEach(function(tot) {
+
+    if (tot.ContractID !== currentContract) {
+      netSalesBalance = 0;
+      encodingBalance = 0;
+      mediaBalance = 0;
+      lastMonthNetBalance = 0;
+      currentContract = tot.ContractID;
+    }
+
+    netSalesBalance += (tot.TotalNetSales || 0);
+    encodingBalance += (tot.TotalEncoding || 0);
+    mediaBalance += (tot.TotalEncoding || 0);
+
+    var netBalance = netSalesBalance + (encodingBalance + mediaBalance);
+
+
+    bulkOp.find({_id:tot._id}).update({
+      $set:{
+        NetBalance:netBalance,
+        EncodingBalance:encodingBalance,
+        MediaBalance:mediaBalance,
+        NetSalesBalance:netSalesBalance,
+        AccountPayable:Math.max(0, netBalance - Math.max(0, lastMonthNetBalance))
+      }
+    });
+
+    lastMonthNetBalance = netSalesBalance + (encodingBalance + mediaBalance);
+
+  });
+  
+  bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
+    if (err) {
+      console.error('Exception running balances', err);
+    } else {
+      cb();
+    }
+  }));
+
+
+}
+
+
 Meteor.publish('Raw', function(){
   return Raw.find();
 });
@@ -209,174 +422,17 @@ Meteor.startup(function () {
       console.info('salesTotals starting');
       // Meteor.call('removeAllTotals');
       var timerDone = Util.timerReadout('salesTotalsReadout')
-      Totals.remove({});
 
-
-      var pipeline = [
-                      {
-                        $match:{
-                          $and:[
-                            {ContractID:{$ne:null}},
-                            {ContractID:{$exists:true}}
-                          ]
-                        }
-                      },
-                      { $group:
-                        {
-                          _id:{
-                            m:"$m",
-                            y:"$y",
-                            ContractID:"$ContractID"
-                          },
-                          TotalNetSales: {
-                            $sum:"$NetSaleValue"
-                          }
-                        }
-                      },
-                      {
-                        $sort:{
-                          '_id.ContractID':1,
-                          '_id.y':1,
-                          '_id.m':1
-                        }
-                      }
-                    ];
-
-      var result = Transactions.aggregate(pipeline);
-
-      var currentContract = null;
-      var balance = 0.0;
-      console.info('result.length', result.length);
-      for (var i=0; i < result.length; i++) {
-
-        if (!isNaN(result[i].TotalNetSales)) {
-          if (result[i]._id.ContractID !== currentContract) {
-            currentContract = result[i]._id.ContractID;
-            balance = 0.0;
-          }
-
-          console.log('ContractID', result[i]._id.ContractID,
-            'y', result[i]._id.y,
-            'm', result[i]._id.m,
-            'balance', balance, 'TotalNetSales', result[i].TotalNetSales);
-          balance += result[i].TotalNetSales;
-          Totals.insert(
-            {
-              NetSalesBalance:balance,
-              TotalNetSales:result[i].TotalNetSales,
-              m: result[i]._id.m,
-              y: result[i]._id.y,
-              ContractID: result[i]._id.ContractID
-            }
-          );
-        }
-      }
-
-      pipeline = [
-                      { $group:
-                        {
-                          _id:{
-                            m:"$m",
-                            y:"$y",
-                            ContractID:"$ContractID"
-                          },
-                          TotalEncoding: {
-                            $sum:"$EncodingU$"
-                          },
-                          TotalMedia: {
-                            $sum:"$MediaU$"
-                          }
-                        }
-                      },
-                      {
-                        $sort:{
-                          '_id.ContractID':1,
-                          '_id.y':1,
-                          '_id.m':1
-                        }
-                      }
-                    ];
-
-      result = Recoupable.aggregate(pipeline);
-
-      currentContract = null;
-      var MediaBalance = 0.0, EncodingBalance = 0.0;
-      console.info('second pass: result.length', result.length);
-      
-      for (i=0; i < result.length; i++) {
-
-        var TotalMedia = result[i].TotalMedia;
-        var TotalEncoding = result[i].TotalEncoding;
-
-        if (isNaN(TotalMedia)) {
-          TotalMedia = 0.0;
-        }
-
-        if (isNaN(TotalEncoding)) {
-          TotalEncoding = 0.0;
-        }
-
-        if (result[i]._id.ContractID !== currentContract) {
-          currentContract = result[i]._id.ContractID;
-          MediaBalance = 0.0;
-          EncodingBalance = 0.0;
-        }
-
-        MediaBalance += TotalMedia;
-        EncodingBalance += TotalEncoding;
-
-        Totals.upsert({
-              m: result[i]._id.m,
-              y: result[i]._id.y,
-              ContractID: result[i]._id.ContractID
-            }, {$set:{
-                TotalMedia:TotalMedia,
-                TotalEncoding:TotalEncoding,
-                MediaBalance:MediaBalance,
-                EncodingBalance:EncodingBalance
-
-            }});
-      }
-
-
-      var RawTotals = Totals.rawCollection();
-      var bulkOp = RawTotals.initializeUnorderedBulkOp();
-      var bulkCount = 0;
-      Totals.find({}, {sort:{ContractID:1, y:1, m:1}}).forEach(function(tot) {
-        var nsb = tot.NetSalesBalance || 0;
-        var eb = tot.EncodingBalance || 0;
-        var mb = tot.MediaBalance || 0;
-
-        console.info(
-            'ContractID', tot.ContractID,
-            'y', tot.y,
-            'm', tot.m,
-            'calc NetBalance', nsb, '+ (', eb, '+', mb, ') = ', nsb - (eb + mb));
-
-        bulkOp.find({_id:tot._id}).update({
-          $set:{
-            NetBalance:nsb + (eb + mb),
-            EncodingBalance:eb,
-            MediaBalance:mb,
-            NetSalesBalance:nsb
-          }
-        });
-        bulkCount++;
+      backfillTotals();
+      console.info('Running total net sales');
+      runTotalNetSalesPipeline(function() {
+        console.info('Running total recoupable');
+        runRecoupablePipeline(function() {
+          console.info('Running balances');
+          runBalances(timerDone);
+        });  
       });
       
-      if (bulkCount) {
-
-        bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
-          timerDone();
-          console.info('salesTotals done');
-          if (err) {
-            console.error('Exception running salesTotals', err);
-          }
-        }));
-      } else {
-        timerDone();
-        console.info('no bulk operations?');
-      }
     }
   });
   console.info('Checking if we need enrichTransactions...');
