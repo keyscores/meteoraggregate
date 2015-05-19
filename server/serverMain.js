@@ -351,11 +351,11 @@ Meteor.startup(function () {
             'ContractID', tot.ContractID,
             'y', tot.y,
             'm', tot.m,
-            'calc NetBalance', nsb, '- (', eb, '+', mb, ') = ', nsb - (eb + mb));
+            'calc NetBalance', nsb, '+ (', eb, '+', mb, ') = ', nsb - (eb + mb));
 
         bulkOp.find({_id:tot._id}).update({
           $set:{
-            NetBalance:nsb - (eb + mb),
+            NetBalance:nsb + (eb + mb),
             EncodingBalance:eb,
             MediaBalance:mb,
             NetSalesBalance:nsb
