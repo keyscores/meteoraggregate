@@ -1,4 +1,4 @@
-if (Recoupable.find().count() === 0) {
+if (!process.env.IS_MIRROR && Recoupable.find().count() === 0) {
 Recoupable.insert({"ContractID":270,"EncodingU$":-1904.85,"MediaU$":0.00,"Date":"01/11/2014", y:2014, m:11, d:1});
 Recoupable.insert({"ContractID":305,"EncodingU$":-1000.00,"MediaU$":0.00,"Date":"01/02/2015", y:2015, m:2, d:1});
 Recoupable.insert({"ContractID":305,"EncodingU$":-3.73,"MediaU$":0.00,"Date":"01/03/2015", y:2015, m:3, d:1});

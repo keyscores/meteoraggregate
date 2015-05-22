@@ -1,5 +1,5 @@
 
-if (Currency.find().count() === 0) {
+if (!process.env.IS_MIRROR && Currency.find().count() === 0) {
 Currency.insert({"CountryCode":"USD","DownloadDate":"2015-01-19T05:00:00.000Z","CurrencyValue":1,"m":12,"y":2014});
 Currency.insert({"CountryCode":"USD","DownloadDate":"2015-01-19T05:00:00.000Z","CurrencyValue":1,"m":1,"y":2015});
 Currency.insert({"CountryCode":"MXN","DownloadDate":"2015-01-19T05:00:00.000Z","CurrencyValue":1.2,"m":12,"y":2014});

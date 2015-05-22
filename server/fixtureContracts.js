@@ -1,4 +1,4 @@
-if (Contract.find().count() === 0) {
+if (!process.env.IS_MIRROR && Contract.find().count() === 0) {
 Contract.insert({"ContractID":1,"VendorIdentifier":"0001_20120403_MOBZ_MEUPAIS","RightsHolder":"Reserva Nacional","Regime":"BR Library","Region":"Brazil","Fee":0.20,"Release":"01/01/2013","Titles":"Meu País","Genre":"Drama","Type":"Catalog","Origin":"Brazil","Awards":"None","Theatrical":"Y"});
 Contract.insert({"ContractID":2,"VendorIdentifier":"0002_20120403_MOBZ_DZICROQUETTES","RightsHolder":"Reserva Nacional","Regime":"BR Library","Region":"Brazil","Fee":0.20,"Release":"01/01/2013","Titles":"Dzi Croquettes","Genre":"Documentary","Type":"Catalog","Origin":"Brazil","Awards":"None","Theatrical":"Y"});
 Contract.insert({"ContractID":3,"VendorIdentifier":"0003_20120403_MOBZ_MEDIANERAS","RightsHolder":"Tag Cultural","Regime":"BR Library","Region":"Brazil","Fee":0.20,"Release":"01/01/2013","Titles":"Medianeras","Genre":"Romance","Type":"Catalog","Origin":"Argentina","Awards":"None","Theatrical":"Y"});

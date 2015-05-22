@@ -1,4 +1,4 @@
-if (Transactions.find().count() === 0) {
+if (!process.env.IS_MIRROR && Transactions.find().count() === 0) {
 Transactions.insert({"VendorIdentifier":"0002_20120403_MOBZ_DZICROQUETTES","Units":1,"DownloadDate":"2015-01-24T0:00.00.000Z","CustomerCurrency":"USD","CountryCode":"BR","CustomerPrice":2.99,"m":1,"y":2015});
 Transactions.insert({"VendorIdentifier":"0003_20120403_MOBZ_MEDIANERAS","Units":1,"DownloadDate":"2015-01-20T0:00.00.000Z","CustomerCurrency":"USD","CountryCode":"BR","CustomerPrice":2.99,"m":1,"y":2015});
 Transactions.insert({"VendorIdentifier":"0003_20120403_MOBZ_MEDIANERAS","Units":1,"DownloadDate":"2015-01-19T0:00.00.000Z","CustomerCurrency":"USD","CountryCode":"BR","CustomerPrice":1.99,"m":1,"y":2015});

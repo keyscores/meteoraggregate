@@ -1,4 +1,4 @@
-if (Region.find().count() === 0) {
+if (!process.env.IS_MIRROR && Region.find().count() === 0) {
 Region.insert({"CountryCode":"AR","Region":"Latam"});
 Region.insert({"CountryCode":"AM","Region":"World"});
 Region.insert({"CountryCode":"AT","Region":"World"});
