@@ -15,7 +15,7 @@ function backfillTotals() {
     for (var y = firstYear; y <= thisYear; y++) {
       var maxMonth = (y === thisYear) ? thisMonth : 12;
       for (var m = 1; m <= maxMonth; m++) {
-        var criteria = {m:m, y:y, ContractID:contract.ContractID}; 
+        var criteria = {m:m, y:y, ContractID:contract.ContractID};
         if (!yearMonths[contract.ContractID + '::' + y + '::' + m]) {
           Totals.insert(criteria);
         }
@@ -60,10 +60,13 @@ function runTotalNetSalesPipeline(cb) {
 
   var RawTotals = Totals.rawCollection();
   var bulkOp = RawTotals.initializeUnorderedBulkOp();
+  var bulkReady = false;
 
+  console.info('salesTotals results', result.length);
   for (var i=0; i < result.length; i++) {
 
     if (!isNaN(result[i].TotalNetSales)) {
+      bulkReady = true;
       bulkOp.find(
         {
           m: result[i]._id.m,
@@ -72,18 +75,24 @@ function runTotalNetSalesPipeline(cb) {
         }).upsert().update(
         {
           $set:{TotalNetSales:result[i].TotalNetSales}
-        }        
+        }
       );
     }
   }
 
-  bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
-    if (!err) {
-      cb();
-    } else {
-      console.error('runTotalNetSalesPipeline ERROR', err);
-    }
-  }));
+  console.info('salesTotals running bulkOp', bulkReady);
+
+  if (bulkReady) {
+    bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
+      if (!err) {
+        cb();
+      } else {
+        console.error('runTotalNetSalesPipeline ERROR', err);
+      }
+    }));
+  } else {
+    cb();
+  }
 
 }
 
@@ -119,6 +128,7 @@ function runRecoupablePipeline(cb) {
 
   var RawTotals = Totals.rawCollection();
   var bulkOp = RawTotals.initializeUnorderedBulkOp();
+  var bulkReady = false;
 
   for (i=0; i < result.length; i++) {
 
@@ -133,6 +143,7 @@ function runRecoupablePipeline(cb) {
       TotalEncoding = 0.0;
     }
 
+    bulkReady = true;
     bulkOp.find({
           m: result[i]._id.m,
           y: result[i]._id.y,
@@ -145,13 +156,17 @@ function runRecoupablePipeline(cb) {
 
 
 
-  bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
-    if (!err) {
-      cb();
-    } else {
-      console.error('runRecoupablePipeline ERROR', err);
-    }
-  }));
+  if (bulkReady) {
+    bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
+      if (!err) {
+        cb();
+      } else {
+        console.error('runRecoupablePipeline ERROR', err);
+      }
+    }));
+  } else {
+    cb();
+  }
 
 }
 
@@ -160,6 +175,7 @@ function runBalances(cb) {
 
   var RawTotals = Totals.rawCollection();
   var bulkOp = RawTotals.initializeUnorderedBulkOp();
+  var bulkReady = false;
 
   var netSalesBalance = 0;
   var encodingBalance = 0;
@@ -180,11 +196,12 @@ function runBalances(cb) {
 
     netSalesBalance += (tot.TotalNetSales || 0);
     encodingBalance += (tot.TotalEncoding || 0);
-    mediaBalance += (tot.TotalEncoding || 0);
+    mediaBalance += (tot.TotalMedia || 0);
 
     var netBalance = netSalesBalance + (encodingBalance + mediaBalance);
 
 
+    bulkReady = true;
     bulkOp.find({_id:tot._id}).update({
       $set:{
         NetBalance:netBalance,
@@ -198,14 +215,19 @@ function runBalances(cb) {
     lastMonthNetBalance = netSalesBalance + (encodingBalance + mediaBalance);
 
   });
-  
-  bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
-    if (err) {
-      console.error('Exception running balances', err);
-    } else {
-      cb();
-    }
-  }));
+
+  if (bulkReady) {
+
+    bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
+      if (err) {
+        console.error('Exception running balances', err);
+      } else {
+        cb();
+      }
+    }));
+  } else {
+    cb();
+  }
 
 
 }
@@ -269,7 +291,7 @@ Meteor.startup(function () {
       });
 
     },
-    enrichTransactions: function() {
+    enrichTransactions: function(runSynchronously) {
       var timerDone = Util.timerReadout('enrichTransactionsReadout');
       var bulkOp, coll;
       Util.timerReadout('enrichTransactionsSetupReadout', function() {
@@ -313,7 +335,7 @@ Meteor.startup(function () {
               console.error('no contract for vendor', tr.VendorIdentifier, 'region', region.Region);
             }
           }
-          
+
           var regime = (contract) ?
               regimeByYear[contract.Regime + '::' + tr.y]//Regime.findOne({Regime:contract.Regime, Year:tr.y})
               : null;
@@ -357,10 +379,6 @@ Meteor.startup(function () {
               - (tr.Units * tr.CustomerPrice * tr.CurrencyRate * tr.FeeRate)
               - (tr.Units * tr.CustomerPrice * tr.CurrencyRate * tr.TaxRate);
 
-          if (idx < 10) {
-            console.info('tr', JSON.stringify(tr, null, 2));
-          }
-
           bulkOp.find({_id: tr._id}).update({
             $set:{
               Region:tr.Region,
@@ -380,14 +398,19 @@ Meteor.startup(function () {
 
       });
 
-
-      bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
+      if (runSynchronously) {
+        Meteor.wrapAsync(bulkOp.execute)();
         timerDone();
         console.info('enrichTransactions done');
-        if (err) {
-          console.error('Exception enriching Transactions', err);
-        }
-      }));
+      } else {
+        bulkOp.execute(Meteor.bindEnvironment(function (err, result) {
+          timerDone();
+          console.info('enrichTransactions done');
+          if (err) {
+            console.error('Exception enriching Transactions', err);
+          }
+        }));
+      }
 
     },
     chgCurrValue: function(_id, crv) {
@@ -418,26 +441,40 @@ Meteor.startup(function () {
       });
     },
 
-    salesTotals: function() {
+    salesTotals: function(runSynchronously) {
       console.info('salesTotals starting');
       // Meteor.call('removeAllTotals');
       var timerDone = Util.timerReadout('salesTotalsReadout')
 
       backfillTotals();
-      console.info('Running total net sales');
-      runTotalNetSalesPipeline(function() {
-        console.info('Running total recoupable');
-        runRecoupablePipeline(function() {
-          console.info('Running balances');
-          runBalances(timerDone);
-        });  
-      });
-      
+
+      if (runSynchronously) {
+        console.info('Running total net sales (sync)');
+        Meteor.wrapAsync(runTotalNetSalesPipeline)();
+        console.info('Running total recoupable (sync)');
+        Meteor.wrapAsync(runRecoupablePipeline)();
+        console.info('Running balances (sync)');
+        Meteor.wrapAsync(runBalances)();
+
+        timerDone();
+
+      } else {
+
+        console.info('Running total net sales');
+        runTotalNetSalesPipeline(function() {
+          console.info('Running total recoupable');
+          runRecoupablePipeline(function() {
+            console.info('Running balances');
+            runBalances(timerDone);
+          });
+        });
+      }
+
     }
   });
   console.info('Checking if we need enrichTransactions...');
 
-  if (Transactions.find({
+  if (Transactions.find().count() > 0 && Transactions.find({
         $and:[
           {ContractID:{$exists:true}},
           {ContractID:{$ne:null}}
