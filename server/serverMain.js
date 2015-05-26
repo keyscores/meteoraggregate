@@ -1,4 +1,6 @@
-function backfillTotals() {
+function backfillTotals(cb) {
+  cb = cb || _.noop;
+  var timerDone = Util.timerReadout('backfillReadout');
   var now = new Date();
   var thisYear = 1900 + now.getYear();
   var thisMonth = now.getMonth() + 1;
@@ -9,19 +11,60 @@ function backfillTotals() {
     yearMonths[t.ContractID + '::' + t.y + '::' + t.m] = 1;
   });
 
+  var RawTotals = Totals.rawCollection();
+  var bulkOp = RawTotals.initializeUnorderedBulkOp();
+  var bulkReady = false;
+  // var allTotals = [];
+
   Contract.find({}).forEach(function(contract) {
-
-
     for (var y = firstYear; y <= thisYear; y++) {
       var maxMonth = (y === thisYear) ? thisMonth : 12;
       for (var m = 1; m <= maxMonth; m++) {
         var criteria = {m:m, y:y, ContractID:contract.ContractID};
         if (!yearMonths[contract.ContractID + '::' + y + '::' + m]) {
-          Totals.insert(criteria);
+          // bulkOp.find(criteria).upsert().update({$set:{
+          //   iCameFromBackfill:true,
+          //   TotalMedia:0,
+          //   TotalEncoding:0,
+          //   TotalNetSales:0
+          // }});
+          criteria._id = Totals._makeNewID();
+          bulkOp.insert(criteria);
+          bulkReady = true;
+
+
+          // Totals.insert(criteria);
+          // allTotals.push(criteria);
         }
       }
     }
   });
+
+  // RawTotals.insert(allTotals, {
+  //   ordered:false,
+  //   writeConcern:{
+  //     w:'majority',
+  //     wtimeout:100000
+  //   }
+  // });
+  // timerDone();
+  // cb();
+  // return;
+
+  if (bulkReady) {
+    bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
+      timerDone();
+      if (!err) {
+        cb();
+      } else {
+        console.error('backfillTotals ERROR', err);
+      }
+    }));
+  } else {
+    timerDone();
+    cb();
+  }
+
 }
 
 function runTotalNetSalesPipeline(cb) {
@@ -200,9 +243,13 @@ function runBalances(cb) {
 
     var netBalance = netSalesBalance + (encodingBalance + mediaBalance);
 
+    var _id = tot._id;
+    if (_id._str) {
+      _id = _id._str;
+    }
 
     bulkReady = true;
-    bulkOp.find({_id:tot._id}).update({
+    bulkOp.find({_id:_id}).update({
       $set:{
         NetBalance:netBalance,
         EncodingBalance:encodingBalance,
@@ -212,6 +259,7 @@ function runBalances(cb) {
       }
     });
 
+    console.info(_id, 'NetBalance', netBalance);
     lastMonthNetBalance = netSalesBalance + (encodingBalance + mediaBalance);
 
   });
@@ -219,6 +267,7 @@ function runBalances(cb) {
   if (bulkReady) {
 
     bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
+      console.info('runBalances:: result.nMatched', result.nMatched, 'result.nModified', result.nModified);
       if (err) {
         console.error('Exception running balances', err);
       } else {
@@ -446,13 +495,18 @@ Meteor.startup(function () {
       // Meteor.call('removeAllTotals');
       var timerDone = Util.timerReadout('salesTotalsReadout')
 
-      backfillTotals();
 
       if (runSynchronously) {
+
+        console.info('backfill totals (sync)');
+        Meteor.wrapAsync(backfillTotals)();
+
         console.info('Running total net sales (sync)');
         Meteor.wrapAsync(runTotalNetSalesPipeline)();
+
         console.info('Running total recoupable (sync)');
         Meteor.wrapAsync(runRecoupablePipeline)();
+
         console.info('Running balances (sync)');
         Meteor.wrapAsync(runBalances)();
 
@@ -460,14 +514,18 @@ Meteor.startup(function () {
 
       } else {
 
-        console.info('Running total net sales');
-        runTotalNetSalesPipeline(function() {
-          console.info('Running total recoupable');
-          runRecoupablePipeline(function() {
-            console.info('Running balances');
-            runBalances(timerDone);
+        console.info('backfill totals');
+        backfillTotals(function() {
+          console.info('Running total net sales');
+          runTotalNetSalesPipeline(function() {
+            console.info('Running total recoupable');
+            runRecoupablePipeline(function() {
+              console.info('Running balances');
+              runBalances(timerDone);
+            });
           });
         });
+
       }
 
     }

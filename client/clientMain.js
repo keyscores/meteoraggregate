@@ -28,7 +28,7 @@ Template.contracts.helpers({
 });
 
 Template.totals.helpers({
-  
+
   getTotals: function () {
     //Meteor.call(salesTotals)
     //Meteor.call('removeAllTotals');
@@ -42,7 +42,7 @@ Template.totals.helpers({
 
     return Totals.find(criteria, {sort:{ContractID:1, y:1, m:1}});
   },
-  
+
   tasks: function () {
     return Tasks.find({}).count()
   },
@@ -58,6 +58,9 @@ Template.totals.helpers({
 });
 
 Template.timers.helpers({
+  backfillReadout:function() {
+    return Timers.findOne({name:'backfillReadout'});
+  },
   currencyReadout:function() {
     return Timers.findOne({name:'currencyReadout'});
   },

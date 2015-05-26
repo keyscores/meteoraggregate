@@ -24,3 +24,5 @@ Util.addFixture('balance', Regime, [
   {"Regime":"OTT only","Offshore":0.0500,"Brasil":0.1465,"Year":2015},
   {"Regime":"Produtor BR","Offshore":0.0500,"Brasil":0.1465,"Year":2015}
 ]);
+
+Util.addFixture('balance', Totals, []);
