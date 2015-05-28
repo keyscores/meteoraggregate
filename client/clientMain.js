@@ -81,6 +81,15 @@ Template.timers.helpers({
   },
   enrichTransactionsSetupReadout:function() {
     return Timers.findOne({name:'enrichTransactionsSetupReadout'});
+  },
+  runRecoupablePipelineReadout:function() {
+    return Timers.findOne({name:'runRecoupablePipelineReadout'});
+  },
+  runTotalNetSalesPipelineReadout:function() {
+    return Timers.findOne({name:'runTotalNetSalesPipelineReadout'});
+  },
+  runBalancesReadout:function() {
+    return Timers.findOne({name:'runBalancesReadout'});
   }
 
 });
