@@ -6,11 +6,6 @@ function backfillTotals(cb) {
   var thisMonth = now.getMonth() + 1;
   var firstYear = thisYear - 3;
 
-  var yearMonths = {};
-  Totals.find({}).forEach(function(t) {
-    yearMonths[t.ContractID + '::' + t.y + '::' + t.m] = 1;
-  });
-
   var bulkOp = ScratchTotals.rawCollection().initializeUnorderedBulkOp();
   var bulkReady = false;
 
@@ -18,12 +13,10 @@ function backfillTotals(cb) {
     for (var y = firstYear; y <= thisYear; y++) {
       var maxMonth = (y === thisYear) ? thisMonth : 12;
       for (var m = 1; m <= maxMonth; m++) {
-        var criteria = {m:m, y:y, ContractID:contract.ContractID};
-        if (!yearMonths[contract.ContractID + '::' + y + '::' + m]) {
-          criteria._id = ScratchTotals._makeNewID();
-          bulkOp.insert(criteria);
-          bulkReady = true;
-        }
+        var obj = {m:m, y:y, ContractID:contract.ContractID};
+        obj._id = ScratchTotals._makeNewID();
+        bulkOp.insert(obj);
+        bulkReady = true;
       }
     }
   });
@@ -78,15 +71,14 @@ function runTotalNetSalesPipeline(cb) {
                   }
                 ];
 
-  var result = Transactions.aggregate(pipeline);
+  var results = Transactions.aggregate(pipeline);
 
   var bulkOp = ScratchTotals.rawCollection().initializeUnorderedBulkOp();
   var bulkReady = false;
 
-  console.info('salesTotals results', result.length);
-  for (var i=0; i < result.length; i++) {
+  results.forEach(function(result) {
 
-    if (!isNaN(result[i].TotalNetSales)) {
+    if (!isNaN(result.TotalNetSales)) {
       bulkReady = true;
       // bulkOp.find(
       //   {
@@ -99,17 +91,18 @@ function runTotalNetSalesPipeline(cb) {
       //   }
       // );
       bulkOp.insert({
-        m: result[i]._id.m,
-        y: result[i]._id.y,
-        ContractID: result[i]._id.ContractID,
-        TotalNetSales:result[i].TotalNetSales,
+        m: result._id.m,
+        y: result._id.y,
+        ContractID: result._id.ContractID,
+        TotalNetSales:result.TotalNetSales,
         _id:ScratchTotals._makeNewID(),
 
         TotalMedia:0.0,
         TotalEncoding:0.0
       });
     }
-  }
+  });
+
 
   console.info('salesTotals running bulkOp', bulkReady);
 
@@ -157,16 +150,15 @@ function runRecoupablePipeline(cb) {
                   }
                 ];
 
-  var result = Recoupable.aggregate(pipeline);
+  var results = Recoupable.aggregate(pipeline);
 
   var bulkOp = ScratchTotals.rawCollection().initializeUnorderedBulkOp();
   var bulkReady = false;
 
-  console.info('runRecoupablePipeline, results length is', result.length);
-  for (i=0; i < result.length; i++) {
+  results.forEach(function(result) {
 
-    var TotalMedia = result[i].TotalMedia;
-    var TotalEncoding = result[i].TotalEncoding;
+    var TotalMedia = result.TotalMedia;
+    var TotalEncoding = result.TotalEncoding;
 
     if (isNaN(TotalMedia) || typeof TotalMedia === 'undefined') {
       TotalMedia = 0.0;
@@ -178,9 +170,9 @@ function runRecoupablePipeline(cb) {
 
     bulkReady = true;
     bulkOp.insert({
-          m: result[i]._id.m,
-          y: result[i]._id.y,
-          ContractID: result[i]._id.ContractID,
+          m: result._id.m,
+          y: result._id.y,
+          ContractID: result._id.ContractID,
           TotalMedia:TotalMedia,
           TotalEncoding:TotalEncoding,
           _id:ScratchTotals._makeNewID(),
@@ -195,7 +187,7 @@ function runRecoupablePipeline(cb) {
     //         TotalMedia:TotalMedia,
     //         TotalEncoding:TotalEncoding
     //     }});
-  }
+  });
 
 
 
@@ -266,7 +258,8 @@ function runBalances(cb) {
 
   var result = ScratchTotals.aggregate(pipeline);
 
-  _.each(result, function(tot) {
+
+  result.forEach(function(tot) {
 
     if (tot._id.ContractID !== currentContract) {
       netSalesBalance = 0;
@@ -309,7 +302,6 @@ function runBalances(cb) {
     Totals.remove({});
 
     bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
-      console.info('runBalances insert result.nInserted', result.nInserted);
       timerDone();
       if (err) {
         console.error('Exception running balances', err);
@@ -401,6 +393,11 @@ Meteor.startup(function () {
           currencyLookup[c.CountryCode + '::' + c.y + '::' + c.m] = c;
         });
 
+        var regionByCountry = {};
+        Region.find({}).forEach(function(r) {
+          regionByCountry[r.CountryCode] = r;
+        });
+
 
         coll = Transactions.rawCollection();
         bulkOp = coll.initializeUnorderedBulkOp();
@@ -409,7 +406,7 @@ Meteor.startup(function () {
         Transactions.find({}).forEach(function(tr) {
           var idx = count++;
 
-          var region = Region.findOne({'CountryCode':tr.CountryCode});
+          var region = regionByCountry[tr.CountryCode];
           if (!region) {
             console.error('no region for country', tr.CountryCode);
           }
@@ -418,10 +415,6 @@ Meteor.startup(function () {
 
           if (region) {
             contract = contractLookup[tr.VendorIdentifier + '::' + region.Region];
-            // Contract.findOne({
-            //   VendorIdentifier:tr.VendorIdentifier,
-            //   Region:region.Region
-            // });
             if (!contract) {
               console.error('no contract for vendor', tr.VendorIdentifier, 'region', region.Region);
             }
