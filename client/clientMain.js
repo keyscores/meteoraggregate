@@ -4,7 +4,8 @@ Meteor.subscribe('Currency');
 Meteor.subscribe('Regime');
 Meteor.subscribe('Contract');
 Meteor.subscribe('Raw');
-Meteor.subscribe('Totals');
+//Totals ends up being too big for chrome to handle even if we don't render it.
+//Meteor.subscribe('Totals'); 
 Meteor.subscribe('Timers');
 
 Template.currency.helpers({
