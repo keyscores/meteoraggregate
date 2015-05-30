@@ -315,19 +315,21 @@ function runBalances(cb) {
   }
 }
 
-
+/*
 Meteor.publish('Raw', function(){
   return Raw.find();
 });
 
-
+*/
 Meteor.publish('Currency', function(){
   return Currency.find();
 });
 
+/*
 Meteor.publish('Totals', function(){
   return Totals.find();
 });
+*/
 
 Meteor.publish('Timers', function(){
   return Timers.find();
