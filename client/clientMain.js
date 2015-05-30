@@ -35,12 +35,12 @@ Template.totals.helpers({
     var criteria;
     var filter = Session.get('totalsContractFilter');
     if (filter === 'any' || typeof filter === 'undefined') {
-      criteria = {};
+      return [];
     } else {
       criteria = {ContractID:parseInt(filter)};
     }
 
-    return Totals.find(criteria, {sort:{ContractID:1, y:1, m:1}});
+    return Totals.find(criteria, {sort:{ContractID:1, y:1}});
   },
 
   tasks: function () {

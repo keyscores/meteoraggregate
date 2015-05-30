@@ -63,7 +63,7 @@
 	<div>
 		Contract Filter
 		<select id="contract-filter">
-			<option value="any">Any</option>
+			<option value="any">Select a contract</option>
 			{{#each getContracts}}
 				<option value="{{ContractID}}">
 					{{ContractID}} {{VendorIdentifier}} ({{Region}})
@@ -86,21 +86,23 @@
 			<th>Account Payable</th>
 		</tr>
 		{{#each getTotals}}
-			<tr>
-				<td>{{ContractID}}</td>
-				<td>{{m}}/{{y}}</td>
-				<td>{{asCurrency TotalNetSales}}</td>
-				<td>{{asCurrency NetSalesBalance}}</td>
+      {{#each months}}
+  			<tr>
+  				<td>{{../ContractID}}</td>
+  				<td>{{m}}/{{../y}}</td>
+  				<td>{{asCurrency TotalNetSales}}</td>
+  				<td>{{asCurrency NetSalesBalance}}</td>
 
-				<td>{{asCurrency TotalEncoding}}</td>
-				<td>{{asCurrency EncodingBalance}}</td>
+  				<td>{{asCurrency TotalEncoding}}</td>
+  				<td>{{asCurrency EncodingBalance}}</td>
 
-				<td>{{asCurrency TotalMedia}}</td>
-				<td>{{asCurrency MediaBalance}}</td>
+  				<td>{{asCurrency TotalMedia}}</td>
+  				<td>{{asCurrency MediaBalance}}</td>
 
-				<td>{{asCurrency NetBalance}}</td>
-				<td>{{asCurrency AccountPayable}}</td>
-			</tr>
+  				<td>{{asCurrency NetBalance}}</td>
+  				<td>{{asCurrency AccountPayable}}</td>
+  			</tr>
+      {{/each}}
 		{{/each}}
 	</table>
 	<button name="calc" id="calc">CALC</button>
@@ -108,29 +110,29 @@
 <template name="timers">
 	<table border="1">
 		<tr>
-			<td>Enrich (incl setup+bulk)</td><td>{{ enrichTransactionsReadout.t }}ms</td>
+			<td>Enrich (incl setup+bulk)</td><td>{{ enrichTransactionsReadout.t }}ms</td><td>{{ enrichTransactionsReadout.d }}ms</td>
 		</tr>
 		<tr>
-			<td>Enrich (setup only)</td><td>{{ enrichTransactionsSetupReadout.t }}ms</td>
+			<td>Enrich (setup only)</td><td>{{ enrichTransactionsSetupReadout.t }}ms</td><td>{{ enrichTransactionsSetupReadout.d }}ms</td>
 		</tr>
 
 		<tr>
-			<td>Sales Totals</td><td>{{ salesTotalsReadout.t }}ms</td>
+			<td>Sales Totals</td><td>{{ salesTotalsReadout.t }}ms</td><td>{{ salesTotalsReadout.d }}ms</td>
     </tr>
 		<tr>
-			<td>Enrich Transactions</td><td>{{ enrichTransactionsReadout.t }}ms</td>
+			<td>Enrich Transactions</td><td>{{ enrichTransactionsReadout.t }}ms</td><td>{{ enrichTransactionsReadout.d }}ms</td>
 		</tr>
     <tr>
-			<td>Backfill totals</td><td>{{ backfillReadout.t }}ms</td>
+			<td>Backfill totals</td><td>{{ backfillReadout.t }}ms</td><td>{{ backfillReadout.d }}ms</td>
 		</tr>
     <tr>
-			<td>runTotalNetSalesPipeline</td><td>{{ runTotalNetSalesPipelineReadout.t }}ms</td>
+			<td>runTotalNetSalesPipeline</td><td>{{ runTotalNetSalesPipelineReadout.t }}ms</td><td>{{ runTotalNetSalesPipelineReadout.d }}ms</td>
 		</tr>
     <tr>
-			<td>runRecoupablePipeline</td><td>{{ runRecoupablePipelineReadout.t }}ms</td>
+			<td>runRecoupablePipeline</td><td>{{ runRecoupablePipelineReadout.t }}ms</td><td>{{ runRecoupablePipelineReadout.d }}ms</td>
 		</tr>
     <tr>
-			<td>runBalances</td><td>{{ runBalancesReadout.t }}ms</td>
+			<td>runBalances</td><td>{{ runBalancesReadout.t }}ms</td><td>{{ runBalancesReadout.d }}ms</td>
 		</tr>
 	</table>
 </template>

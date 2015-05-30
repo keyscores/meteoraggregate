@@ -11,9 +11,8 @@ describe('Balance', function() {
 
 
   it('should get NetBalance of 1581.27', function() {
-    var may2015 = Totals.findOne({m:5, y:2015, ContractID:294});
-    console.info('may2015 is', may2015);
-    console.info(Totals.find({y:2015}, {sort:{m:1}}).fetch());
+    var year2015 = Totals.findOne({y:2015, ContractID:294});
+    var may2015 = year2015.months[4];
     expect(may2015).toBeTruthy();
     expect(may2015.NetBalance).toBeCloseTo(1581.27, 2);
   });

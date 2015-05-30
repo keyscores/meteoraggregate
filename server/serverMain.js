@@ -1,41 +1,96 @@
-function backfillTotals(cb) {
-  cb = cb || _.noop;
-  var timerDone = Util.timerReadout('backfillReadout');
+function mkMonthTotal(m, o2) {
+  var t = {
+    m:m,
+    TotalNetSales:0.0,
+    TotalMedia:0.0,
+    TotalEncoding:0.0,
+
+    NetBalance:0.0,
+    EncodingBalance:0.0,
+    MediaBalance:0.0,
+    NetSalesBalance:0.0,
+    AccountPayable:0.0
+  };
+
+  if (o2) {
+    t = _.extend(t, o2);
+  }
+  return t;
+}
+
+function applyPipelineTotalsAndInsert(contractTotals, pipelineTotals, bulkOp) {
+  var netSalesBalance = 0;
+  var encodingBalance = 0;
+  var mediaBalance = 0;
+  var lastMonthNetBalance = 0;
+  var bulkReady = false;
+
+  _.each(contractTotals.yearMonths, function(yearMonth) {
+    var contractTotal = contractTotals.byYearMonth[yearMonth];
+    var tot = pipelineTotals[yearMonth] || {};
+
+    netSalesBalance += (tot.TotalNetSales || 0);
+    encodingBalance += (tot.TotalEncoding || 0);
+    mediaBalance += (tot.TotalMedia || 0);
+
+    var netBalance = netSalesBalance + (encodingBalance + mediaBalance);
+
+    _.extend(contractTotal, {
+      TotalMedia:tot.TotalMedia || 0,
+      TotalNetSales:tot.TotalNetSales || 0,
+      TotalEncoding:tot.TotalEncoding || 0,
+
+      NetBalance:netBalance,
+      EncodingBalance:encodingBalance,
+      MediaBalance:mediaBalance,
+      NetSalesBalance:netSalesBalance,
+      AccountPayable:Math.max(0, netBalance - Math.max(0, lastMonthNetBalance))
+    });
+
+    lastMonthNetBalance = netSalesBalance + (encodingBalance + mediaBalance);
+  });
+
+
+  _.each(contractTotals.years, function(yearData) {
+    bulkReady = true;
+    bulkOp.insert(yearData);
+  });
+
+  return bulkReady;
+}
+
+function totalsForContract(contractID) {
   var now = new Date();
   var thisYear = 1900 + now.getYear();
   var thisMonth = now.getMonth() + 1;
   var firstYear = thisYear - 3;
 
-  var bulkOp = ScratchTotals.rawCollection().initializeUnorderedBulkOp();
-  var bulkReady = false;
+  var data = {
+    byYearMonth:{},
+    yearMonths:[],
+    years:[]
+  };
 
-  Contract.find({}).forEach(function(contract) {
-    for (var y = firstYear; y <= thisYear; y++) {
-      var maxMonth = (y === thisYear) ? thisMonth : 12;
-      for (var m = 1; m <= maxMonth; m++) {
-        var obj = {m:m, y:y, ContractID:contract.ContractID};
-        obj._id = ScratchTotals._makeNewID();
-        bulkOp.insert(obj);
-        bulkReady = true;
-      }
+  var mt;
+
+  for (var y = firstYear; y <= thisYear; y++) {
+    var yearDoc = {
+      y:y,
+      ContractID:contractID,
+      months:[]
+    };
+
+    data.years.push(yearDoc);
+
+    for (var m = 1; m <= 12; m++) {
+      mt = mkMonthTotal(m);
+      yearDoc.months.push(mt);
+      data.byYearMonth[y * 100 + m] = mt;
+      data.yearMonths.push(y * 100 + m);
     }
-  });
-
-
-  if (bulkReady) {
-    bulkOp.execute(Meteor.bindEnvironment(function(err, result) {
-      timerDone();
-      if (!err) {
-        cb();
-      } else {
-        console.error('backfillTotals ERROR', err);
-      }
-    }));
-  } else {
-    timerDone();
-    cb();
   }
 
+  return data;
 }
 
 function runTotalNetSalesPipeline(cb) {
@@ -214,11 +269,8 @@ function runBalances(cb) {
   var bulkOp = RawTotals.initializeUnorderedBulkOp();
   var bulkReady = false;
 
-  var netSalesBalance = 0;
-  var encodingBalance = 0;
-  var mediaBalance = 0;
-  var lastMonthNetBalance = 0;
   var currentContract = null;
+  var currentYear = null;
 
   var pipeline = [
                   { $group:
@@ -228,13 +280,6 @@ function runBalances(cb) {
                         y:"$y",
                         ContractID:"$ContractID"
                       },
-                      // TotalEncoding: {
-                      //   $sum:"$EncodingU$"
-                      // },
-                      // TotalMedia: {
-                      //   $sum:"$MediaU$"
-                      // }
-
                       TotalMedia:{
                         $sum:"$TotalMedia"
                       },
@@ -249,54 +294,35 @@ function runBalances(cb) {
                   },
                   {
                     $sort:{
-                      '_id.ContractID':1,
-                      '_id.y':1,
-                      '_id.m':1
+                      '_id.ContractID':1
                     }
                   }
                 ];
 
   var result = ScratchTotals.aggregate(pipeline);
-
+  var contractTotals = null;
+  var pipelineTotals = {};
 
   result.forEach(function(tot) {
 
     if (tot._id.ContractID !== currentContract) {
-      netSalesBalance = 0;
-      encodingBalance = 0;
-      mediaBalance = 0;
-      lastMonthNetBalance = 0;
       currentContract = tot._id.ContractID;
+
+      if (contractTotals) {
+        bulkReady = applyPipelineTotalsAndInsert(contractTotals, pipelineTotals, bulkOp);
+      }
+
+      contractTotals = totalsForContract(tot._id.ContractID);
+      pipelineTotals = {};
     }
 
-    netSalesBalance += (tot.TotalNetSales || 0);
-    encodingBalance += (tot.TotalEncoding || 0);
-    mediaBalance += (tot.TotalMedia || 0);
-
-    var netBalance = netSalesBalance + (encodingBalance + mediaBalance);
-
-    bulkReady = true;
-    bulkOp.insert({
-      _id:Totals._makeNewID(),
-      m:tot._id.m,
-      y:tot._id.y,
-      ContractID:tot._id.ContractID,
-
-      TotalMedia:tot.TotalMedia,
-      TotalNetSales:tot.TotalNetSales,
-      TotalEncoding:tot.TotalEncoding,
-
-      NetBalance:netBalance,
-      EncodingBalance:encodingBalance,
-      MediaBalance:mediaBalance,
-      NetSalesBalance:netSalesBalance,
-      AccountPayable:Math.max(0, netBalance - Math.max(0, lastMonthNetBalance))
-    });
-
-    lastMonthNetBalance = netSalesBalance + (encodingBalance + mediaBalance);
+    pipelineTotals[tot._id.y * 100 + tot._id.m] = tot;
 
   });
 
+  if (contractTotals) {
+    bulkReady = applyPipelineTotalsAndInsert(contractTotals, pipelineTotals, bulkOp);
+  }
 
   if (bulkReady) {
     Totals.remove({});
@@ -534,9 +560,6 @@ Meteor.startup(function () {
 
       if (runSynchronously) {
 
-        console.info('backfill totals (sync)');
-        Meteor.wrapAsync(backfillTotals)();
-
         console.info('Running total net sales (sync)');
         Meteor.wrapAsync(runTotalNetSalesPipeline)();
 
@@ -551,14 +574,12 @@ Meteor.startup(function () {
       } else {
 
         console.info('backfill totals');
-        backfillTotals(function() {
-          console.info('Running total net sales');
-          runTotalNetSalesPipeline(function() {
-            console.info('Running total recoupable');
-            runRecoupablePipeline(function() {
-              console.info('Running balances');
-              runBalances(timerDone);
-            });
+        console.info('Running total net sales');
+        runTotalNetSalesPipeline(function() {
+          console.info('Running total recoupable');
+          runRecoupablePipeline(function() {
+            console.info('Running balances');
+            runBalances(timerDone);
           });
         });
 
