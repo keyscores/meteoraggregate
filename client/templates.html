@@ -9,7 +9,6 @@
   {{> currency}}
   {{> taxrates}}
   {{> contracts}}
-  {{> totals}}
   {{> timers}}
 </body>
 
@@ -115,7 +114,6 @@
 		<tr>
 			<td>Enrich (setup only)</td><td>{{ enrichTransactionsSetupReadout.t }}ms</td><td>{{ enrichTransactionsSetupReadout.d }}ms</td>
 		</tr>
-
 		<tr>
 			<td>Sales Totals</td><td>{{ salesTotalsReadout.t }}ms</td><td>{{ salesTotalsReadout.d }}ms</td>
     </tr>
@@ -134,5 +132,8 @@
     <tr>
 			<td>runBalances</td><td>{{ runBalancesReadout.t }}ms</td><td>{{ runBalancesReadout.d }}ms</td>
 		</tr>
+		<tr>
+			<td>Sales Totals</td><td>{{ salesTotalsReadout.t }}ms</td>
+   		 </tr>
 	</table>
 </template>
