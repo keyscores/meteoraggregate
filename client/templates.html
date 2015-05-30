@@ -107,29 +107,25 @@
 <template name="timers">
 	<table border="1">
 		<tr>
-			<td>Enrich (incl setup+bulk)</td><td>{{ enrichTransactionsReadout.t }}ms</td>
-		</tr>
-		<tr>
 			<td>Enrich (setup only)</td><td>{{ enrichTransactionsSetupReadout.t }}ms</td>
 		</tr>
-
 		<tr>
-			<td>Sales Totals</td><td>{{ salesTotalsReadout.t }}ms</td>
-    </tr>
-		<tr>
-			<td>Enrich Transactions</td><td>{{ enrichTransactionsReadout.t }}ms</td>
+			<td>Enrich (incl setup+bulk)</td><td>{{ enrichTransactionsReadout.t }}ms</td>
 		</tr>
-    <tr>
+        <tr>
 			<td>Backfill totals</td><td>{{ backfillReadout.t }}ms</td>
 		</tr>
-    <tr>
+        <tr>
 			<td>runTotalNetSalesPipeline</td><td>{{ runTotalNetSalesPipelineReadout.t }}ms</td>
 		</tr>
-    <tr>
+        <tr>
 			<td>runRecoupablePipeline</td><td>{{ runRecoupablePipelineReadout.t }}ms</td>
 		</tr>
-    <tr>
+        <tr>
 			<td>runBalances</td><td>{{ runBalancesReadout.t }}ms</td>
 		</tr>
+		<tr>
+			<td>Sales Totals</td><td>{{ salesTotalsReadout.t }}ms</td>
+   		 </tr>
 	</table>
 </template>
