@@ -12,3 +12,6 @@ udondan:bulk-collection-update
 aldeed:template-extension
 sanjo:jasmine
 velocity:html-reporter
+modweb:baby-parse
+cfs:standard-packages
+cfs:gridfs

@@ -8,16 +8,22 @@ var csvParseSync = Meteor.wrapAsync(CSVParse);
   }
   console.log(output); // [ { foo: '1', bar: '2' } ]
   test = CSVParse('foo,bar\n1,2', { columns: true })
-  
+
   console.log(test);
-  
-  
-  
-  
+
+
+
+
   var path = Npm.require('path');
 
   PATH_FOR_YOUR_APP = path.join(__meteor_bootstrap__.serverDir, "../web.browser/app")
 
   c2c.addPublicCsvToCollection(CSV, 'data/test.csv');
-  
+
     */
+
+//Try with modweb:baby-parse
+console.log(process.env.PWD );
+filePath = process.env.PWD + "/public/data/test.csv";
+parsed = Baby.parseFiles(filePath);
+console.log(parsed.data);
