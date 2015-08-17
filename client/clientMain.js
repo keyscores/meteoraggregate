@@ -5,15 +5,23 @@ Meteor.subscribe('Regime');
 Meteor.subscribe('Contract');
 //Meteor.subscribe('Raw');
 //Totals ends up being too big for chrome to handle even if we don't render it.
-//Meteor.subscribe('Totals'); 
+//so we can make a filter monthlyNetSales server and client side
+Meteor.subscribe('Totals');
 Meteor.subscribe('Timers');
 
 Template.currency.helpers({
   getCurrency: function () {
     return Currency.find({});
   }
-
 });
+
+Template.chart.helpers({
+  timeseries: function(){
+    string = Totals.find().fetch()[0];
+    return EJSON.stringify(string.months);
+  }
+});
+
 
 Template.taxrates.helpers({
   getTaxes: function () {
