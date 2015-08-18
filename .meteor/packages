@@ -15,3 +15,4 @@ velocity:html-reporter
 modweb:baby-parse
 cfs:standard-packages
 cfs:gridfs
+cfs:filesystem
