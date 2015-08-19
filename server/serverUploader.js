@@ -21,7 +21,7 @@ Images.on('uploaded', function (fileObj) {
 
 
     csv
-     .fromStream(readStream)
+     .fromStream(readStream, {headers : true})
      .on("data", function(data){
          console.log('csv data', data);
      })
