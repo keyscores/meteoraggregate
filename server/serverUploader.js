@@ -14,8 +14,8 @@ Images.on('uploaded', function (fileObj) {
   //create files from streams http://www.sitepoint.com/basics-node-js-streams/#piping
   readStream = fileObj.createReadStream('whatever.csv');
   writeStream = fileObj.createWriteStream('newwhatever.csv');
-
   readStream.pipe(writeStream)
+
   test = Baby.parseFiles(writeStream)
   console.log(test);
 });
