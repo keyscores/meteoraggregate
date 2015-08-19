@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "csvtojson": {
+      "version": "0.4.2",
+      "dependencies": {
+        "async": {
+          "version": "1.4.2"
+        },
+        "underscore": {
+          "version": "1.8.3"
+        }
+      }
+    }
+  }
+}

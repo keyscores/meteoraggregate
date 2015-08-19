@@ -380,9 +380,9 @@ Meteor.startup(function () {
     removeAllCurrency: function() {
       return Currency.remove({});
     },
-    removeAllRaw: function() {
-      return Raw.remove({});
-    },
+    // removeAllRaw: function() {
+    //   return Raw.remove({});
+    // },
     removeAllTransactions: function() {
       return Transactions.remove({});
     },

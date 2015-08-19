@@ -17,3 +17,7 @@ cfs:standard-packages
 cfs:gridfs
 cfs:filesystem
 chhib:fast-csv
+meteorhacks:npm
+
+
+npm-container
