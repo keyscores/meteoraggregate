@@ -28,6 +28,7 @@ cfs:tempstore@0.1.5
 cfs:upload-http@0.0.20
 cfs:worker@0.1.4
 check@1.0.5
+chhib:fast-csv@0.0.1
 coffeescript@1.0.6
 dburles:mongo-collection-instances@0.2.6
 ddp@1.1.0

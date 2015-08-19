@@ -16,3 +16,4 @@ modweb:baby-parse
 cfs:standard-packages
 cfs:gridfs
 cfs:filesystem
+chhib:fast-csv

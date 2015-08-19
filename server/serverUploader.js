@@ -10,7 +10,7 @@ console.log(parsed);
 // help: https://forums.meteor.com/t/reading-an-uploaded-file-with-collectionfs/8630
 Images.on('uploaded', function (fileObj) {
   //checking that something happens
-  console.log('FileID just uploaed: ' + fileObj._id, fileObj.isUploaded(), fileObj.hasStored());
+  console.log('FileID just stored: ' + fileObj._id, fileObj.isUploaded(), fileObj.hasStored());
   console.dir(fileObj);
 
   console.log('waiting 10s');
@@ -18,17 +18,16 @@ Images.on('uploaded', function (fileObj) {
 
     //create files from streams http://www.sitepoint.com/basics-node-js-streams/#piping
     var readStream = fileObj.createReadStream();
-    var csvPieces = [];
-    readStream.on('data', function(d) {
-      csvPieces.push(d.toString());
-    });
-    readStream.on('end', function() {
-      console.log('stream end?');
-      var test = Baby.parse(csvPieces.join(''));
-      console.log(test);
-    });
-    // var writeStream = fileObj.createWriteStream('newwhatever.csv');
-    // readStream.pipe(writeStream)
+
+
+    csv
+     .fromStream(readStream)
+     .on("data", function(data){
+         console.log('csv data', data);
+     })
+     .on("end", function(){
+         console.log("done with csv");
+     });
 
   }, 10000);
 });
