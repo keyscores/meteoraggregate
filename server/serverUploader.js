@@ -1,13 +1,13 @@
 csvtojson = Meteor.npmRequire('csvtojson')
 fs = Meteor.npmRequire('fs')
 
+// Test csvtojson just with local files.
 // fileStream = fs.createReadStream(filePath);
 // converter = new csvtojson.Converter();
 // converter.on("end_parsed", function (jsonObj) {
 //    console.log(jsonObj); //here is your result json object
 // });
 // fileStream.pipe(converter);
-
 
 // Using CollectionFS requires streaming the data.
 // Cool reactive util from CollectionFS has a reactive callback to when a file is uploaded.
