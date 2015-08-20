@@ -17,7 +17,7 @@ Images.on('uploaded', function (fileObj) {
   //checking that something happens
   console.log('FileID just stored: ' + fileObj._id, fileObj.isUploaded(), fileObj.hasStored());
     parsedJson = []
-    var myFuture = new Future();
+    //var myFuture = new Future();
     readStream = fileObj.createReadStream();
     //delimiter is for tabs '\t', fork is to spawn a new system process to move out of the single loop
     converter = new csvtojson.Converter({delimiter:"\t", fork:true});
@@ -33,7 +33,11 @@ Images.on('uploaded', function (fileObj) {
       })
     readStream.pipe(converter);
     parsedJson = myFuture.wait();
-    Transaction.insert(parsedJson);
+    _.each(parsedJson, function(doc) {
+      Transactions.insert(doc);
+    })
+    //Transactions.insert(parsedJson); // Still not inserting each document, Meteor does not allow arrays to be inserted.
+
 });
 
 
