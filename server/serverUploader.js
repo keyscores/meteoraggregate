@@ -1,5 +1,6 @@
 csvtojson = Meteor.npmRequire('csvtojson')
 fs = Meteor.npmRequire('fs')
+Future = Npm.require('fibers/future');
 
 // Test csvtojson just with local files.
 // fileStream = fs.createReadStream(filePath);
@@ -15,19 +16,24 @@ fs = Meteor.npmRequire('fs')
 Images.on('uploaded', function (fileObj) {
   //checking that something happens
   console.log('FileID just stored: ' + fileObj._id, fileObj.isUploaded(), fileObj.hasStored());
+    parsedJson = []
+    var myFuture = new Future();
     readStream = fileObj.createReadStream();
     //delimiter is for tabs '\t', fork is to spawn a new system process to move out of the single loop
     converter = new csvtojson.Converter({delimiter:"\t", fork:true});
+    var myFuture = new Future();
     converter
       .on("end_parsed", function (jsonObj) {
-        console.log(jsonObj);
-        //Transactions.insert({name: 1})
+        //console.log(jsonObj);
+        parsedJson = jsonObj
+        //Transactions.insert({name: 1}) //When in a stream results in: Error: Meteor code must always run within a Fiber.
         //Transaction.insert(jsonobj)
-      })
-      .on("end", function (){
+        myFuture.return(jsonObj);
         console.log('end');
-      });
+      })
     readStream.pipe(converter);
+    parsedJson = myFuture.wait();
+    Transaction.insert(parsedJson);
 });
 
 
